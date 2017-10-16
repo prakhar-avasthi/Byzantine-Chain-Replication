@@ -16,4 +16,3 @@ class Node_(da.NodeProcess):
         client = self.new(class_client.Client, args=(olympus,))
         self._start(olympus)
         self._start(client)
-        self._start(client)

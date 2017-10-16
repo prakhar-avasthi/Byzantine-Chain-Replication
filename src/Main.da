@@ -1,8 +1,8 @@
 def main():
-    config(channel = Fifo, clock = Lamport)
     class_olympus = import_da('Olympus')
     class_client = import_da('Client')
     olympus = new(class_olympus.Olympus, args=(), at='OlympusNode')
     client = new(class_client.Client, args=(olympus,))
+    config(channel = Fifo, clock = Lamport)
     start(olympus)
     start(client)

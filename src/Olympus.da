@@ -1,5 +1,6 @@
 class Olympus(process):
     def setup():
+        output("Olympus:>> Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
 
@@ -28,7 +29,12 @@ class Olympus(process):
         output("Olympus:>> Setting up Replicas")
         i = 0
         for replica in replicaList:
-            setup(replica, args=(self, replicaList, i))
+            if i is 0:
+                setup(replica, args=(self, list(replicaList), i, 'head'))
+            elif i is 2:
+                setup(replica, args=(self, list(replicaList), i, 'tail'))
+            else:
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica'))
             i += 1
         self.config.list_replica = list(replicaList)
         start(replicaList)
