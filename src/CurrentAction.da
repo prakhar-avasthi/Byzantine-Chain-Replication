@@ -1,3 +1,4 @@
 class CurrentAction:
-  def setup(slot_id, operation) :
-    pass
+  def __init__(self) :
+    self.slot_id = None
+    self.operation = None
