@@ -1,4 +1,5 @@
 class Replica(process):
+    ##[TODO: take more parameters for the code to run successfully]
     def setup(olympus, replicaList, index):
         output("Replica",self.index,":>> SETUP is completed")
 
@@ -10,6 +11,101 @@ class Replica(process):
         output("Replica",self.index,":>> Received req_operation from Client")
         ##[TODO] perform actual operation
         result = "yayee"
-        ##[TODO: RAJAT: 'res_operation will be sent by Tail Replica']
-        send(('res_operation', result), to=client)
-        output("Replica",self.index,":>> Replied res_operation to Client")
+
+        ## If the replica is head node, it will create a forward shuttle
+        if type == 'head' :
+          order_proof_list = []
+          result_proof_list = []
+
+          class_order_proof = import_da('OrderProof')
+          order_proof = class_order_proof.OrderProof()
+          order_proof.order = "order"
+          order_proof.action = "action_to_perform"
+          order_proof_list.add(order_proof)
+
+          class_result_proof = import_da('ResultProof')
+          result_proof = class_result_proof.ResultProof()
+          result_proof.result_const = "result"
+          result_proof.action = "action_to_perform"
+          result_proof.result= result
+          result_proof_list.add(result_proof)
+
+          class_shuttle = import_da('Shuttle')
+          forward_shuttle = class_shuttle.Shuttle
+          forward_shuttle.action = "action_to_perform"
+          forward_shuttle.order_proof_list = order_proof_list
+          forward_shuttle.result_proof_list = result_proof_list
+          send(('forward_shuttle', forward_shuttle), to = replicaList[index + 1])
+
+    def receive(msg = ('forward_shuttle', replica, forward_shuttle)):
+        output("Replica",self.index,":>> Received req_operation from Client")
+        ##[TODO] perform actual operation
+        result = "yayee"
+
+        ## normal replica will fetch the order and result proof list and add its own and send to next replica
+        if type == 'normal_replica' :
+
+          ## fetch result proof and order proof list from the forward shuttle
+          order_proof_list = forward_shuttle.order_proof_list
+          result_proof_list = forward_shuttle.result_proof_list
+
+          ## make its own order proof and append it to the order proof list
+          class_order_proof = import_da('OrderProof')
+          order_proof = class_order_proof.OrderProof()
+          order_proof.order = "order"
+          order_proof.action = "action_to_perform"
+          order_proof_list.add(order_proof)
+
+          ## make its own result proof and append it to the result proof list
+          class_result_proof = import_da('ResultProof')
+          result_proof = class_result_proof.ResultProof()
+          result_proof.result_const = "result"
+          result_proof.action = "action_to_perform"
+          result_proof.result= result
+          result_proof_list.add(result_proof)
+
+          ## send the shuttle to next replica
+          send(('forward_shuttle', forward_shuttle), to = replicaList[index + 1])
+
+        ## If replica is a tail node, it will create a result shuttle
+        if type == 'tail' :
+
+          ## send result to client
+          send(('res_operation', result), to=client)
+          output("Replica",self.index,":>> Replied res_operation to Client")
+
+          ## fetch result proof and order proof list from the forward shuttle
+          order_proof_list = forward_shuttle.order_proof_list
+          result_proof_list = forward_shuttle.result_proof_list
+
+          ## make its own order proof and append it to the order proof list
+          class_order_proof = import_da('OrderProof')
+          order_proof = class_order_proof.OrderProof()
+          order_proof.order = "order"
+          order_proof.action = "action_to_perform"
+          order_proof_list.add(order_proof)
+
+          ## make its own result proof and append it to the result proof list
+          class_result_proof = import_da('ResultProof')
+          result_proof = class_result_proof.ResultProof()
+          result_proof.result_const = "result"
+          result_proof.action = "action_to_perform"
+          result_proof.result= result
+          result_proof_list.add(result_proof)
+
+          ## make a new result shuttle
+          class_shuttle = import_da('Shuttle')
+          result_shuttle = class_shuttle.Shuttle
+          result_shuttle.action = "action_to_perform"
+          result_shuttle.order_proof_list = order_proof_list
+          result_shuttle.result_proof_list = result_proof_list
+          send(('result_shuttle', self, result_shuttle), to = replicaList[index - 1])
+
+      def receive(msg = ('result_shuttle', tail)):
+          output("Received result shuttle from tail node")
+
+          ## [TODO] take history parameter in setup
+          history.add(result_shuttle)
+
+          ## send the shuttle to next replica
+          send(('result_shuttle', forward_shuttle), to = replicaList[index - 1])

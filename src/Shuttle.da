@@ -1,3 +1,6 @@
 class Shuttle:
-    def setup(action, order_proof_list, result_proof_list):
-      pass
+    def __init__(self):
+      self.action = None
+      self.order_proof_list = None
+      self.result_proof_list = None
+      self.result = None

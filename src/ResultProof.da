@@ -1,3 +1,5 @@
 class ResultProof:
-    def setup(result, action, replica):
-      pass
+    def __init__(self):
+      self.result_const = None
+      self.action = None
+      self.result = None
