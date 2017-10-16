@@ -1,7 +1,7 @@
 class Olympus(process):
     def setup():
-        self.config_id = None
-        self.configuration = None
+        class_config = import_da('Configuration')
+        self.config = class_config.Configuration()
 
     def run():
         output("Olympus:>> Started")
@@ -9,21 +9,19 @@ class Olympus(process):
 
     def receive(msg = ('req_get_current_configuration', client)):
         output("Olympus:>> Received req_get_current_configuration from Client")
-        if self.configuration is None:
+        if self.config.config_id is None or self.config.config_id is None:
             output("Olympus:>> Configuration is NONE")
-            config = self.makeNewConfiguration()
-            self.config_id = config[0]
-            self.configuration = config[1]
+            makeNewConfiguration()
 
         output("Olympus:>> Replying res_get_current_configuration with configuration")
-        send(('res_get_current_configuration', self.config_id, self.configuration), to=client)
+        send(('res_get_current_configuration', self.config), to=client)
 
     def makeNewConfiguration():
         output("Olympus:>> Making New Configuration")
-        if self.config_id is None:
-            self.config_id = 1
+        if self.config.config_id is None:
+            self.config.config_id = 1
         else:
-            self.config_id += 1
+            self.config.config_id += 1
 
         class_replica = import_da('Replica')
         replicaList = new(class_replica.Replica, num= 3)
@@ -32,5 +30,5 @@ class Olympus(process):
         for replica in replicaList:
             setup(replica, args=(self, replicaList, i))
             i += 1
+        self.config.list_replica = list(replicaList)
         start(replicaList)
-        return (self.config_id, list(replicaList))
