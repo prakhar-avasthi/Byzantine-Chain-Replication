@@ -1,3 +1,4 @@
 class Operation:
-    def setup(client_request_id, command):
-      pass
+    def __init__(self):
+      self.client_request_id = None
+      self.command = None
