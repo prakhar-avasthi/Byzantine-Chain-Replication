@@ -1,0 +1,4 @@
+# number of clients
+num_client=3
+# number of replicas
+num_replica=3

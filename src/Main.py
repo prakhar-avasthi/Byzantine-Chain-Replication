@@ -10,10 +10,18 @@ class Node_(da.NodeProcess):
     _config_object = {'channel': 'Fifo', 'clock': 'Lamport'}
 
     def run(self):
+        config = {}
+        with open('config.txt', 'r') as f:
+            for line in f:
+                if (not (line[0] == '#')):
+                    (key, sep, val) = line.partition('=')
+                    if (not (len(sep) == 0)):
+                        val = val.strip()
+                        config[key.strip()] = (int(val) if str.isdecimal(val) else val)
         class_olympus = da.import_da('Olympus')
         class_client = da.import_da('Client')
-        olympus = self.new(class_olympus.Olympus, args=(), at='OlympusNode')
-        clientList = self.new(class_client.Client, num=3)
+        olympus = self.new(class_olympus.Olympus, args=(config['num_replica'],), at='OlympusNode')
+        clientList = self.new(class_client.Client, num=config['num_client'])
         i = 0
         for client in clientList:
             self._setup(client, args=(olympus, i))

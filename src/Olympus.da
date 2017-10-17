@@ -1,5 +1,5 @@
 class Olympus(process):
-    def setup():
+    def setup(num_replica):
         output("Olympus:>> Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
@@ -25,7 +25,7 @@ class Olympus(process):
             self.config.config_id += 1
 
         class_replica = import_da('Replica')
-        replicaList = new(class_replica.Replica, num= 3)
+        replicaList = new(class_replica.Replica, num= self.num_replica)
         output("Olympus:>> Setting up Replicas")
         i = 0
         for replica in replicaList:
