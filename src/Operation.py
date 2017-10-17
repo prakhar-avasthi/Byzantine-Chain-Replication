@@ -7,3 +7,4 @@ class Operation():
     def __init__(self):
         self.client_request_id = None
         self.command = None
+        self.type = None

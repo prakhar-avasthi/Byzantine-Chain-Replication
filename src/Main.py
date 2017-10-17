@@ -20,11 +20,13 @@ class Node_(da.NodeProcess):
                         config[key.strip()] = (int(val) if str.isdecimal(val) else val)
         class_olympus = da.import_da('Olympus')
         class_client = da.import_da('Client')
-        olympus = self.new(class_olympus.Olympus, args=(config['num_replica'],), at='OlympusNode')
+        num_replica = ((2 * config['t']) + 1)
+        olympus = self.new(class_olympus.Olympus, args=(num_replica,), at='OlympusNode')
         clientList = self.new(class_client.Client, num=config['num_client'])
         i = 0
         for client in clientList:
-            self._setup(client, args=(olympus, i))
+            load = (('workload[' + str(i)) + ']')
+            self._setup(client, args=(olympus, i, config[str(load)]))
             i += 1
         self._start(olympus)
         self._start(clientList)

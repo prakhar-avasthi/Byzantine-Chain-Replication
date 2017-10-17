@@ -1,6 +1,10 @@
 class Client(process):
-    def setup(olympus, index):
+    def setup(olympus, index, workload):
         self.config = None
+        output("Client",index,":>> workload: ", workload)
+        self.operations = None
+        if not 'random' in workload:
+            self.operations = workload.split(';')
 
     def run():
         output("Client",index,":>> Started")
@@ -14,15 +18,28 @@ class Client(process):
 
         output("Client",index,":>> Already have headnode")
         #Creating an operation to be send to client
-        class_operation = import_da('Operation')
-        operation = class_operation.Operation()
-        operation.client_request_id = index         #sending its index to identify client
-        operation.command = ("stony", "brook")
+        if not self.operations is None:
+            for command in self.operations:
+                class_operation = import_da('Operation')
+                operation = class_operation.Operation()
+                operation.client_request_id = index         #sending its index to identify client
+                if 'put' in command:
+                    operation.type = 1
+                    operation.command = command[3:]
+                elif 'get' in command:
+                    operation.type = 2
+                    operation.command = command[3:]
+                elif 'slice' in command:
+                    operation.type = 3
+                    operation.command = command[5:]
+                elif 'append' in command:
+                    operation.type = 4
+                    operation.command = command[6:]
 
-        #Sending operation to HeadNode
-        output("Client",index,":>> Sending operation to Head Node")
-        send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
-        await(some(received(("res_operation", result))))
+                #Sending operation to HeadNode
+                output("Client",index,":>> Sending operation to Head Node")
+                send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
+                await(some(received(("res_operation", result))))
 
     def receive (msg= ('res_get_current_configuration', config)):
         output("Client",index,":>> Received res_get_current_configuration from Olympus")

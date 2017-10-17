@@ -2,3 +2,8 @@ class Operation:
     def __init__(self):
       self.client_request_id = None
       self.command = None
+      self.type = None
+      ## put -> 1
+      ## get -> 2
+      ## slice -> 3
+      ## append -> 4
