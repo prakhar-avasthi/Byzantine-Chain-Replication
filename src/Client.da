@@ -20,21 +20,27 @@ class Client(process):
         #Creating an operation to be send to client
         if not self.operations is None:
             for command in self.operations:
+                command = command.strip()
+                output("Client",index,":>> Command: ", command)
                 class_operation = import_da('Operation')
                 operation = class_operation.Operation()
                 operation.client_request_id = index         #sending its index to identify client
                 if 'put' in command:
                     operation.type = 1
                     operation.command = command[3:]
+                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'get' in command:
                     operation.type = 2
                     operation.command = command[3:]
+                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'slice' in command:
                     operation.type = 3
                     operation.command = command[5:]
+                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'append' in command:
                     operation.type = 4
                     operation.command = command[6:]
+                    output("Client",index,":>> operation.command ", operation.command)
 
                 #Sending operation to HeadNode
                 output("Client",index,":>> Sending operation to Head Node")
