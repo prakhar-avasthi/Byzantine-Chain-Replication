@@ -1,26 +1,34 @@
 class Client(process):
-    def setup(olympus):
+    def setup(olympus, index):
         self.config = None
 
     def run():
-        output("Client:>> Started")
+        output("Client",index,":>> Started")
         if self.config is None:
-            output("Client:>> Current Configuration is None")
-            output("Client:>> Sending req_get_current_configuration to Olympus")
+            output("Client",index,":>> Current Configuration is None")
+            output("Client",index,":>> Sending req_get_current_configuration to Olympus")
             send(('req_get_current_configuration', self), to=olympus)
-            output("Client:>> Waiting for res_get_current_configuration from Olympus")
+            output("Client",index,":>> Waiting for res_get_current_configuration from Olympus")
             await(some(received(('res_get_current_configuration', config))))
-            output("Client:>> Ready to perform operation")
+            output("Client",index,":>> Ready to perform operation")
 
-        output("Client:>> Already have headnode")
-        send(('req_operation', self), to=self.config.list_replica[0])
+        output("Client",index,":>> Already have headnode")
+        #Creating an operation to be send to client
+        class_operation = import_da('Operation')
+        operation = class_operation.Operation()
+        operation.client_request_id = index         #sending its index to identify client
+        operation.command = ("stony", "brook")
+
+        #Sending operation to HeadNode
+        output("Client",index,":>> Sending operation to Head Node")
+        send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         await(some(received(("res_operation", result))))
 
     def receive (msg= ('res_get_current_configuration', config)):
-        output("Client:>> Received res_get_current_configuration from Olympus")
+        output("Client",index,":>> Received res_get_current_configuration from Olympus")
         self.config = config
-        output("Client:>> current Configuration Updated")
+        output("Client",index,":>> current Configuration Updated")
 
     def receive (msg= ('res_operation', result)):
-        output("Client:>> Received res_operation from Replica")
-        output("Client:>> Result of operation is ", result)
+        output("Client",index,":>> Received res_operation from Replica")
+        output("Client",index,":>> Result of operation is ", result)

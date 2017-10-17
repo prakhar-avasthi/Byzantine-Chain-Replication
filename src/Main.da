@@ -3,8 +3,10 @@ def main():
     class_client = import_da('Client')
     olympus = new(class_olympus.Olympus, args=(), at='OlympusNode')
     clientList = new(class_client.Client, num= 3)
+    i = 0
     for client in clientList:
-        setup(client, args=(olympus,))
+        setup(client, args=(olympus, i))
+        i += 1
 
     config(channel = Fifo, clock = Lamport)
     start(olympus)

@@ -30,11 +30,11 @@ class Olympus(process):
         i = 0
         for replica in replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head'))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict()))
             elif i is 2:
-                setup(replica, args=(self, list(replicaList), i, 'tail'))
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict()))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica'))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict()))
             i += 1
         self.config.list_replica = list(replicaList)
         start(replicaList)

@@ -11,8 +11,8 @@ class Olympus(da.DistProcess):
         self._OlympusReceivedEvent_0 = []
         self._events.extend([da.pat.EventPattern(da.pat.ReceivedEvent, '_OlympusReceivedEvent_0', PatternExpr_183, sources=None, destinations=None, timestamps=None, record_history=True, handlers=[]), da.pat.EventPattern(da.pat.ReceivedEvent, '_OlympusReceivedEvent_1', PatternExpr_206, sources=None, destinations=None, timestamps=None, record_history=None, handlers=[self._Olympus_handler_205])])
 
-    def setup(self, **rest_341):
-        super().setup(**rest_341)
+    def setup(self, **rest_347):
+        super().setup(**rest_347)
         self.output('Olympus:>> Setup')
         class_config = da.import_da('Configuration')
         self._state.config = class_config.Configuration()
@@ -50,11 +50,11 @@ class Olympus(da.DistProcess):
         i = 0
         for replica in replicaList:
             if (i is 0):
-                self._setup(replica, args=(self._id, list(replicaList), i, 'head'))
+                self._setup(replica, args=(self._id, list(replicaList), i, 'head', dict()))
             elif (i is 2):
-                self._setup(replica, args=(self._id, list(replicaList), i, 'tail'))
+                self._setup(replica, args=(self._id, list(replicaList), i, 'tail', dict()))
             else:
-                self._setup(replica, args=(self._id, list(replicaList), i, 'normal_replica'))
+                self._setup(replica, args=(self._id, list(replicaList), i, 'normal_replica', dict()))
             i += 1
         self._state.config.list_replica = list(replicaList)
         self._start(replicaList)

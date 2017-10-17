@@ -14,7 +14,9 @@ class Node_(da.NodeProcess):
         class_client = da.import_da('Client')
         olympus = self.new(class_olympus.Olympus, args=(), at='OlympusNode')
         clientList = self.new(class_client.Client, num=3)
+        i = 0
         for client in clientList:
-            self._setup(client, args=(olympus,))
+            self._setup(client, args=(olympus, i))
+            i += 1
         self._start(olympus)
         self._start(clientList)

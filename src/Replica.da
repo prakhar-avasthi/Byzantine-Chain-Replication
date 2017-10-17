@@ -1,50 +1,65 @@
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
-    def setup(olympus, replicaList, index, type):
-        output("Replica",self.index,":>> SETUP is completed")
+    def setup(olympus, replicaList, index, type, database):
+        output("Replica",self.index,":>> Setting up Replica: ",type)
 
     def run():
         output("Replica",self.index,":>> Replica Started: ", self.type)
-        await(some(received(('req_operation', client))) or
-        some(received(('forward_shuttle', replica, forward_shuttle, client))))
+        if self.type == 'head':
+            await(some(received(('req_operation', operation, client, client_index))))
+        else:
+            await(some(received(('forward_shuttle', replica, forward_shuttle, client))))
 
-    def receive(msg = ('req_operation', client)):
-        output("Replica",self.index,":>> Received req_operation from Client")
+    def receive(msg = ('req_operation', operation, client, client_index)):
+        output("Replica",self.index,":>> Received req_operation from Client", client_index)
         ##[TODO] perform actual operation
-        result = "yayee"
+        key = operation.command[0]
+        value = operation.command[1]
+        self.database[key] = value
+        result = "ok"
 
         ## If the replica is head node, it will create a forward shuttle
         if self.type == 'head' :
-          output("Replica",self.index,":>>Operation received at head node")
+          output("Replica",self.index,":>> Operation received at head node")
+          output("Replica",self.index,":>> Head Node will assign a sequence id")
+          class_action = import_da('Action')
+          action = class_action.Action()
+          action.seq_id = 1
+          action.operation = operation
           order_proof_list = []
           result_proof_list = []
 
           class_order_proof = import_da('OrderProof')
           order_proof = class_order_proof.OrderProof()
           order_proof.order = "order"
-          order_proof.action = "action_to_perform"
+          order_proof.action = action
           order_proof_list.append(order_proof)
 
           class_result_proof = import_da('ResultProof')
           result_proof = class_result_proof.ResultProof()
           result_proof.result_const = "result"
-          result_proof.action = "action_to_perform"
+          result_proof.action = action
           result_proof.result= result
           result_proof_list.append(result_proof)
 
           class_shuttle = import_da('Shuttle')
           forward_shuttle = class_shuttle.Shuttle()
-          forward_shuttle.action = "action_to_perform"
+          forward_shuttle.action = action
           forward_shuttle.order_proof_list = order_proof_list
           forward_shuttle.result_proof_list = result_proof_list
           output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1)
           send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+          await(some(received(('result_shuttle', replica, result_shuttle, client))))
 
     ##[TODO] Do we need to pass Client in Send?
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client)):
         output("Replica",self.index,":>> Received forward_shuttle from replica")
-        ##[TODO] perform actual operation
-        result = "yayee"
+        ##[Done] perform actual operation
+        action = forward_shuttle.action
+        key = action.operation.command[0]
+        value = action.operation.command[1]
+        self.database[key] = value
+        result = "ok"
 
         ## normal replica will fetch the order and result proof list and add its own and send to next replica
         if type == 'normal_replica' :
@@ -57,20 +72,21 @@ class Replica(process):
           class_order_proof = import_da('OrderProof')
           order_proof = class_order_proof.OrderProof()
           order_proof.order = "order"
-          order_proof.action = "action_to_perform"
+          order_proof.action = action
           order_proof_list.append(order_proof)
 
           ## make its own result proof and append it to the result proof list
           class_result_proof = import_da('ResultProof')
           result_proof = class_result_proof.ResultProof()
           result_proof.result_const = "result"
-          result_proof.action = "action_to_perform"
+          result_proof.action = action
           result_proof.result= result
           result_proof_list.append(result_proof)
 
           ## send the shuttle to next replica
           output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1)
           send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+          await(some(received(('result_shuttle', replica, result_shuttle, client))))
 
         ## If replica is a tail node, it will create a result shuttle
         if type == 'tail' :
@@ -87,14 +103,14 @@ class Replica(process):
           class_order_proof = import_da('OrderProof')
           order_proof = class_order_proof.OrderProof()
           order_proof.order = "order"
-          order_proof.action = "action_to_perform"
+          order_proof.action = action
           order_proof_list.append(order_proof)
 
           ## make its own result proof and append it to the result proof list
           class_result_proof = import_da('ResultProof')
           result_proof = class_result_proof.ResultProof()
           result_proof.result_const = "result"
-          result_proof.action = "action_to_perform"
+          result_proof.action = action
           result_proof.result= result
           result_proof_list.append(result_proof)
 
@@ -105,6 +121,7 @@ class Replica(process):
           result_shuttle.order_proof_list = order_proof_list
           result_shuttle.result_proof_list = result_proof_list
           send(('result_shuttle', self, result_shuttle), to = self.replicaList[index - 1])
+          await(some(received(('result_shuttle', replica, result_shuttle, client))))
 
 
 
