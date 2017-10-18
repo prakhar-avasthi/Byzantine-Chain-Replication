@@ -21,12 +21,12 @@ class Node_(da.NodeProcess):
         class_olympus = da.import_da('Olympus')
         class_client = da.import_da('Client')
         num_replica = ((2 * config['t']) + 1)
-        olympus = self.new(class_olympus.Olympus, args=(num_replica,), at='OlympusNode')
+        olympus = self.new(class_olympus.Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout']), at='OlympusNode')
         clientList = self.new(class_client.Client, num=config['num_client'])
         i = 0
         for client in clientList:
             load = (('workload[' + str(i)) + ']')
-            self._setup(client, args=(olympus, i, config[str(load)]))
+            self._setup(client, args=(olympus, i, config[str(load)], config['client_timeout']))
             i += 1
         self._start(olympus)
         self._start(clientList)
