@@ -1,9 +1,10 @@
+import pickle
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
-    def setup(olympus, replicaList, index, type, database, history): pass
+    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key): pass
 
     def run():
-        output("Replica",self.index,":>> Replica Started: ", self.type)
+        output("Replica",self.index,":>> Replica Started with a private key: ", self.type)
         await(some(received(('terminate_replica'))))
 
     def performOperation(operation):
@@ -57,7 +58,12 @@ class Replica(process):
             order_proof = class_order_proof.OrderProof()
             order_proof.order = "order"
             order_proof.action = action
-            order_proof_list.append(order_proof)
+
+            # signing order proof
+            signed_order_proof = self.private_key.sign(pickle.dumps(order_proof))
+
+            order_proof_list.append(signed_order_proof)
+            ##output("Replica",self.index,":>> Successfully signed and appended order_proof", signed_order_proof)
 
             class_result_proof = import_da('ResultProof')
             result_proof = class_result_proof.ResultProof()
@@ -80,18 +86,30 @@ class Replica(process):
         output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
         result = performOperation(action.operation)
 
+        ## fetch result proof and order proof list from the forward shuttle
+        order_proof_list = forward_shuttle.order_proof_list
+        result_proof_list = forward_shuttle.result_proof_list
+
+        ##validating the orderproof
+        for i in range(len(order_proof_list)) :
+            try:
+                public_keys[i].verify(order_proof_list[i])
+            except:
+                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
         ## normal replica will fetch the order and result proof list and add its own and send to next replica
         if type == 'normal_replica' :
-            ## fetch result proof and order proof list from the forward shuttle
-            order_proof_list = forward_shuttle.order_proof_list
-            result_proof_list = forward_shuttle.result_proof_list
+
+            verify_key = self.private_key.verify_key
 
             ## make its own order proof and append it to the order proof list
             class_order_proof = import_da('OrderProof')
             order_proof = class_order_proof.OrderProof()
             order_proof.order = "order"
             order_proof.action = action
-            order_proof_list.append(order_proof)
+            signed_order_proof = self.private_key.sign(pickle.dumps(order_proof))
+            order_proof_list.append(signed_order_proof)
 
             ## make its own result proof and append it to the result proof list
             class_result_proof = import_da('ResultProof')
@@ -110,10 +128,6 @@ class Replica(process):
             ## send result to client
             send(('res_operation', action.operation.command, result), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
-
-            ## fetch result proof and order proof list from the forward shuttle
-            order_proof_list = forward_shuttle.order_proof_list
-            result_proof_list = forward_shuttle.result_proof_list
 
             ## make its own order proof and append it to the order proof list
             class_order_proof = import_da('OrderProof')

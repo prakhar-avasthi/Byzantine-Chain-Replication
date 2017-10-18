@@ -1,3 +1,6 @@
+import nacl.encoding
+import nacl.signing
+
 class Olympus(process):
     def setup(num_replica):
         output("Olympus:>> Setup")
@@ -26,15 +29,25 @@ class Olympus(process):
 
         class_replica = import_da('Replica')
         replicaList = new(class_replica.Replica, num= self.num_replica)
-        output("Olympus:>> Setting up Replicas")
+
+        ##output("Olympus:>> Setting up Replicas with : ", signing_key)
+
+        public_keys = []
+        private_keys = []
+
+        for i in range(len(replicaList)):
+            signing_key = nacl.signing.SigningKey.generate()
+            private_keys.append(signing_key)
+            public_keys.append(signing_key.verify_key)
+            
         i = 0
         for replica in replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict()))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(),public_keys, private_keys[i]))
             elif i is 2:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict()))
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(),public_keys, private_keys[i]))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict()))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(), public_keys, private_keys[i]))
             i += 1
         self.config.list_replica = list(replicaList)
         start(replicaList)
