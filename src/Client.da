@@ -9,49 +9,37 @@ class Client(process):
     def run():
         output("Client",index,":>> Started")
         if self.config is None:
-            output("Client",index,":>> Current Configuration is None")
-            output("Client",index,":>> Sending req_get_current_configuration to Olympus")
             send(('req_get_current_configuration', self), to=olympus)
-            output("Client",index,":>> Waiting for res_get_current_configuration from Olympus")
             await(some(received(('res_get_current_configuration', config))))
-            output("Client",index,":>> Ready to perform operation")
 
-        output("Client",index,":>> Already have headnode")
         #Creating an operation to be send to client
         if not self.operations is None:
             for command in self.operations:
                 command = command.strip()
-                output("Client",index,":>> Command: ", command)
                 class_operation = import_da('Operation')
                 operation = class_operation.Operation()
                 operation.client_request_id = index         #sending its index to identify client
                 if 'put' in command:
                     operation.type = 1
                     operation.command = command[3:]
-                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'get' in command:
                     operation.type = 2
                     operation.command = command[3:]
-                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'slice' in command:
                     operation.type = 3
                     operation.command = command[5:]
-                    output("Client",index,":>> operation.command ", operation.command)
                 elif 'append' in command:
                     operation.type = 4
                     operation.command = command[6:]
-                    output("Client",index,":>> operation.command ", operation.command)
 
                 #Sending operation to HeadNode
-                output("Client",index,":>> Sending operation to Head Node")
+                output("Client",index,":>> Sending operation to Head Node: ", operation.command)
                 send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
-                await(some(received(("res_operation", result))))
+
+        await(some(received(('terminate_client'))))
 
     def receive (msg= ('res_get_current_configuration', config)):
-        output("Client",index,":>> Received res_get_current_configuration from Olympus")
         self.config = config
-        output("Client",index,":>> current Configuration Updated")
 
-    def receive (msg= ('res_operation', result)):
-        output("Client",index,":>> Received res_operation from Replica")
-        output("Client",index,":>> Result of operation is ", result)
+    def receive (msg= ('res_operation', operation, result)):
+        output("Client",index,":>> Result of operation ", operation ," is ", result)
