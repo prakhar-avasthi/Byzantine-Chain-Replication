@@ -41,5 +41,5 @@ class Client(process):
     def receive (msg= ('res_get_current_configuration', config)):
         self.config = config
 
-    def receive (msg= ('res_operation', operation, result)):
+    def receive (msg= ('res_operation', operation, result, result_proof_list)):
         output("Client",index,":>> Result of operation ", operation ," is ", result)

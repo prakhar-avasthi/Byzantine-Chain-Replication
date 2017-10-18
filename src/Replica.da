@@ -108,7 +108,7 @@ class Replica(process):
         ## If replica is a tail node, it will create a result shuttle
         if type == 'tail' :
             ## send result to client
-            send(('res_operation', action.operation.command, result), to=client)
+            send(('res_operation', action.operation.command, result, forward_shuttle.result_proof_list), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## fetch result proof and order proof list from the forward shuttle
