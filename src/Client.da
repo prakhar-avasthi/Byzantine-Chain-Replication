@@ -1,5 +1,5 @@
 class Client(process):
-    def setup(olympus, index, workload):
+    def setup(olympus, index, workload, timeout):
         self.config = None
         output("Client",index,":>> workload: ", workload)
         self.operations = None
@@ -35,7 +35,11 @@ class Client(process):
                 #Sending operation to HeadNode
                 output("Client",index,":>> Sending operation to Head Node: ", operation.command)
                 send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
+                if(await(some(received(('res_operation', operation, result, result_proof_list))))): pass
+                elif timeout(timeout):
+                    output("Client",index,":>> Timeout: ", operation)
 
+        -- l
         await(some(received(('terminate_client'))))
 
     def receive (msg= ('res_get_current_configuration', config)):

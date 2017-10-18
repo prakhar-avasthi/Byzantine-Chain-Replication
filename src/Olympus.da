@@ -1,5 +1,5 @@
 class Olympus(process):
-    def setup(num_replica):
+    def setup(num_replica, head_timeout, nonhead_timeout):
         output("Olympus:>> Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
@@ -30,11 +30,11 @@ class Olympus(process):
         i = 0
         for replica in replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict()))
-            elif i is 2:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict()))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), head_timeout))
+            elif i is num_replica-1:
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), nonhead_timeout))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict()))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(), nonhead_timeout))
             i += 1
         self.config.list_replica = list(replicaList)
         start(replicaList)

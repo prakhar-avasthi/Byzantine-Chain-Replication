@@ -14,12 +14,13 @@ def main():
     class_olympus = import_da('Olympus')
     class_client = import_da('Client')
     num_replica = 2 * config['t'] + 1
-    olympus = new(class_olympus.Olympus, args=(num_replica,), at='OlympusNode')
+
+    olympus = new(class_olympus.Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout']), at='OlympusNode')
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:
         load = 'workload[' + str(i) + ']'
-        setup(client, args=(olympus, i, config[str(load)]))
+        setup(client, args=(olympus, i, config[str(load)], config['client_timeout']))
         i += 1
 
     config(channel = Fifo, clock = Lamport)
