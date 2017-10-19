@@ -30,7 +30,13 @@ class Replica(process):
             else:
                 return ''
         elif operation.type is 3:
-            return 'OK'
+            limit = value.split(':')
+            if key in self.database and len(self.database[key]) >= int(limit[1]):
+                val = self.database[key]
+                self.database[key] = val[int(limit[0]):int(limit[1])]
+                return 'OK'
+            else:
+                return 'FAIL'
         elif operation.type is 4:
             if key in self.database:
                 val = self.database[key]
