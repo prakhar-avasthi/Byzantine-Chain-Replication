@@ -1,3 +1,8 @@
+import pickle
+import nacl.encoding
+import nacl.signing
+import nacl.hash
+
 class Client(process):
     def setup(olympus, index, workload, timeout):
         self.config = None
@@ -46,4 +51,24 @@ class Client(process):
         self.config = config
 
     def receive (msg= ('res_operation', operation, result, result_proof_list)):
-        output("Client",index,":>> Result of operation ", operation ," is ", result)
+
+        discard_flag = False
+        ## take a copy of result it got
+        copy_result = result
+
+        ## calculate the result hash from the result it get
+        ## calculate the result digest
+        HASHER = nacl.hash.sha256
+        result_byte = pickle.dumps(result)
+        result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+        ## check this digest with all the results in the result_proof_list so that client believe the value is correct
+        for result_proof in result_proof_list:
+            output("Client",index,":>> Checking the cryptohash")
+            if result_proof.result != result_digest:
+                output("Client",index,":>> Cryptohash is not matching so discarding the result")
+                discard_flag = True
+
+        if not discard_flag:
+            output("Client",index,":>> Result of operation ", operation ," is ", result)
+            discard_flag = False

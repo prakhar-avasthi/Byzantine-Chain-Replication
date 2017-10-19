@@ -1,5 +1,6 @@
 import nacl.encoding
 import nacl.signing
+import nacl.hash
 
 class Olympus(process):
     def setup(num_replica, head_timeout, nonhead_timeout):

@@ -1,4 +1,8 @@
 import pickle
+import nacl.encoding
+import nacl.signing
+import nacl.hash
+
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout): pass
@@ -69,7 +73,13 @@ class Replica(process):
             result_proof = class_result_proof.ResultProof()
             result_proof.result_const = "result"
             result_proof.action = action
-            result_proof.result= result
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+            result_proof.result= result_digest
             result_proof_list.append(result_proof)
 
             class_shuttle = import_da('Shuttle')
@@ -119,7 +129,13 @@ class Replica(process):
             result_proof = class_result_proof.ResultProof()
             result_proof.result_const = "result"
             result_proof.action = action
-            result_proof.result= result
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+            result_proof.result= result_digest
             result_proof_list.append(result_proof)
 
             ## send the shuttle to next replica
@@ -131,9 +147,6 @@ class Replica(process):
 
         ## If replica is a tail node, it will create a result shuttle
         if type == 'tail' :
-            ## send result to client
-            send(('res_operation', action.operation.command, result, forward_shuttle.result_proof_list), to=client)
-            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make its own order proof and append it to the order proof list
             class_order_proof = import_da('OrderProof')
@@ -147,8 +160,18 @@ class Replica(process):
             result_proof = class_result_proof.ResultProof()
             result_proof.result_const = "result"
             result_proof.action = action
-            result_proof.result= result
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+            result_proof.result= result_digest
             result_proof_list.append(result_proof)
+
+            ## send result to client
+            send(('res_operation', action.operation.command, result, forward_shuttle.result_proof_list), to=client)
+            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
             class_shuttle = import_da('Shuttle')
@@ -158,6 +181,7 @@ class Replica(process):
             result_shuttle.result_proof_list = result_proof_list
             output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle), to = self.replicaList[index - 1])
+
             if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
