@@ -8,6 +8,7 @@ class Client(process):
         self.config = None
         output("Client",index,":>> workload: ", workload)
         self.operations = None
+        self.replica_public_keys = []
         if not 'random' in workload:
             self.operations = workload.split(';')
 
@@ -15,9 +16,9 @@ class Client(process):
         output("Client",index,":>> Started")
         if self.config is None:
             send(('req_get_current_configuration', self), to=olympus)
-            await(some(received(('res_get_current_configuration', config))))
+            await(some(received(('res_get_current_configuration', config, replica_public_keys))))
 
-        #Creating an operation to be send to client
+        #Creating an operation to be send to replica
         if not self.operations is None:
             for command in self.operations:
                 command = command.strip()
@@ -47,7 +48,8 @@ class Client(process):
         -- l
         await(some(received(('terminate_client'))))
 
-    def receive (msg= ('res_get_current_configuration', config)):
+    def receive (msg= ('res_get_current_configuration', config, replica_public_keys)):
+        self.replica_public_keys = replica_public_keys
         self.config = config
 
     def receive (msg= ('res_operation', operation, result, result_proof_list)):
@@ -61,13 +63,24 @@ class Client(process):
         HASHER = nacl.hash.sha256
         result_byte = pickle.dumps(result)
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+        unsigned_result_proof = None
 
         ## check this digest with all the results in the result_proof_list so that client believe the value is correct
+        i = 0
         for result_proof in result_proof_list:
+
+            try:
+                unsigned_result_proof = pickle.loads(replica_public_keys[i].verify(result_proof))
+            except:
+                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
             output("Client",index,":>> Checking the cryptohash")
-            if result_proof.result != result_digest:
+            i += 1
+            if unsigned_result_proof.result != result_digest:
                 output("Client",index,":>> Cryptohash is not matching so discarding the result")
                 discard_flag = True
+                break
 
         if not discard_flag:
             output("Client",index,":>> Result of operation ", operation ," is ", result)
