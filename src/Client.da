@@ -8,6 +8,7 @@ class Client(process):
         self.config = None
         output("Client",index,":>> workload: ", workload)
         self.commands = None
+        self.timeout_reply = 0
         self.command_state = {}
         if not 'random' in workload:
             self.commands = workload.split(';')
@@ -39,6 +40,7 @@ class Client(process):
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         if(await(some(received(('res_operation', operation, result, result_proof_list))))): pass
         elif timeout(timeout):
+            self.timeout_reply = 0
             output("Client",index,":>> Client Timeout.")
             for key in self.command_state.keys():
                 val = self.command_state[key]
@@ -46,6 +48,9 @@ class Client(process):
                     resend_operation = makeOperation(key, val[0])
                     for replica in self.config.list_replica:
                         send(('req_operation_timeout', resend_operation, self, self.index), to=replica)
+                    if await(self.timeout_reply > len(self.config.list_replica)/2): pass
+                    elif timeout(timeout):
+                        output("Client",index,":>> Not received from Quoram, Terminate System.")
 
 
     def makeOperation(seq_id, command):
@@ -104,3 +109,6 @@ class Client(process):
 
     def receive (msg= ('res_operation_timeout', operation, result, result_proof_list)):
         output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
+        self.timeout_reply += 1
+        if self.timeout_reply > len(self.config.list_replica)/2:
+            output("Client",index,":>> Got from Quoram")

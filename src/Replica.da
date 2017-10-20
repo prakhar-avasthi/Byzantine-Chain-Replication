@@ -178,7 +178,7 @@ class Replica(process):
 
             ## send result to client
             send(('res_operation', action.operation, result, forward_shuttle.result_proof_list), to=client)
-            output("[Replica",self.index,":>>] Replied res_operation to CLIENT: ", action.operation.command, " result: ", result)
+            output("[Replica",self.index,":>>] Replied res_operation to CLIENT: ", action.operation, " result: ", result)
 
             ## make a new result shuttle
             class_shuttle = import_da('Shuttle')
@@ -187,6 +187,7 @@ class Replica(process):
             result_shuttle.result = result
             result_shuttle.order_proof_list = order_proof_list
             result_shuttle.result_proof_list = result_proof_list
+            self.history[action] = result_shuttle
             output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle), to = self.replicaList[index - 1])
 
