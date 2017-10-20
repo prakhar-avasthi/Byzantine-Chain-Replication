@@ -44,7 +44,7 @@ class Client(process):
         output("Client",index,":>> Sending operation to Head Node: ", operation.command)
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
-        if(await(some(received(('res_operation', operation, result, result_proof_list))))): pass
+        if(await(some(received(('res_operation', operation, result, result_proof))))): pass
         elif timeout(timeout):
             self.timeout_reply = 0
             output("Client",index,":>> Client Timeout.")
@@ -80,7 +80,7 @@ class Client(process):
         return operation
 
 
-    def receive (msg= ('res_operation', operation, result, result_proof_list)):
+    def receive (msg= ('res_operation', operation, result, result_proof)):
 
         discard_flag = False
         ## take a copy of result it got
@@ -91,20 +91,20 @@ class Client(process):
         HASHER = nacl.hash.sha256
         result_byte = pickle.dumps(result)
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-        unsigned_result_proof = None
+        unsigned_result_statement = None
 
-        ## check this digest with all the results in the result_proof_list so that client believe the value is correct
+        ## check this digest with all the results in the result_proof so that client believe the value is correct
         i = 0
-        for result_proof in result_proof_list:
+        for result_statement in result_proof:
             try:
-                unsigned_result_proof = pickle.loads(replica_public_keys[i].verify(result_proof))
+                unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
             except:
                 output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
             output("Client",index,":>> Checking the cryptohash")
             i += 1
-            if unsigned_result_proof.result != result_digest:
+            if unsigned_result_statement.result != result_digest:
                 output("Client",index,":>> Result received. Checking the cryptohash of each replica for operation: ", operation.command)
                 discard_flag = True
                 break
@@ -119,7 +119,7 @@ class Client(process):
             discard_flag = False
 
 
-    def receive (msg= ('res_operation_timeout', operation, result, result_proof_list)):
+    def receive (msg= ('res_operation_timeout', operation, result, result_proof)):
         output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
         self.timeout_reply += 1
         if self.timeout_reply > len(self.config.list_replica)/2:

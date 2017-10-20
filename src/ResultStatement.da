@@ -1,4 +1,4 @@
-class ResultProof:
+class ResultStatement:
     def __init__(self):
       self.result_const = None
       self.action = None
