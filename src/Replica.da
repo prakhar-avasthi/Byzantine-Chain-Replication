@@ -52,7 +52,7 @@ class Replica(process):
 
 
     def receive(msg = ('req_operation', operation, client, client_index)):
-        output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
+        output("[Replica",self.index,":<<] Received req_operation from Client", client_index, " operation: ", operation.command)
         result = performOperation(operation)
 
         ## If the replica is head node, it will create a forward shuttle
@@ -93,7 +93,7 @@ class Replica(process):
             forward_shuttle.action = action
             forward_shuttle.order_proof_list = order_proof_list
             forward_shuttle.result_proof_list = result_proof_list
-            output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
+            output("[Replica",self.index,":>>] Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
             send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
@@ -102,7 +102,7 @@ class Replica(process):
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client)):
         action = forward_shuttle.action
-        output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
+        output("[Replica",self.index,":<<] Received forward_shuttle from previous replica, operation: ", action.operation.command)
         result = performOperation(action.operation)
 
         ## fetch result proof and order proof list from the forward shuttle
@@ -114,7 +114,7 @@ class Replica(process):
             try:
                 public_keys[i].verify(order_proof_list[i])
             except:
-                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+                output("[Replica",self.index,":>>] Key doesnot verify so terminating the replica")
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
         ## normal replica will fetch the order and result proof list and add its own and send to next replica
@@ -145,7 +145,7 @@ class Replica(process):
             result_proof_list.append(result_proof)
 
             ## send the shuttle to next replica
-            output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
+            output("[Replica",self.index,":>>] Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
             send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
@@ -176,16 +176,17 @@ class Replica(process):
             result_proof_list.append(result_proof)
 
             ## send result to client
-            send(('res_operation', action.operation.command, result, forward_shuttle.result_proof_list), to=client)
-            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
+            send(('res_operation', action.operation, result, forward_shuttle.result_proof_list), to=client)
+            output("[Replica",self.index,":>>] Replied res_operation to CLIENT: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
             class_shuttle = import_da('Shuttle')
             result_shuttle = class_shuttle.Shuttle()
             result_shuttle.action = action
+            result_shuttle.result = result
             result_shuttle.order_proof_list = order_proof_list
             result_shuttle.result_proof_list = result_proof_list
-            output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
+            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle), to = self.replicaList[index - 1])
 
             if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
@@ -196,12 +197,22 @@ class Replica(process):
     def receive(msg = ('result_shuttle', replica, result_shuttle)):
         action = result_shuttle.action
         self.history[action] = result_shuttle
-        output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.command)
+        output("[Replica",self.index,":<<] Received result_shuttle from previous replica: ", action.operation.command)
 
         if not type == 'head':
             ## send the shuttle to next replica
-            output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
+            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle), to = replicaList[index - 1])
             if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
+
+
+    def receive(msg = ('req_operation_timeout', operation, client, client_index)):
+        output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.commands)
+        for action in self.history.keys():
+            if action.operation.client_request_id == operation.client_request_id:
+                if action.operation.command == operation.command:
+                    if action.operation.type == operation.type:
+                        result_shuttle = self.history[action]
+                        send(('res_operation_timeout', operation, result_shuttle.result, result_shuttle.result_proof_list), to=client)
