@@ -15,6 +15,7 @@ class Client(process):
             for i in range(len(self.commands)):
                 self.command_state[i] = [self.commands[i], 100]       ## State 100 -> not started
 
+
     def run():
         output("Client",index,":>> Started")
         if self.config is None:
@@ -90,10 +91,10 @@ class Client(process):
                 discard_flag = True
 
         if not discard_flag:
-            output("Client",index,":>> Result of operation ", operation ," is ", result)
-            command_state = self.command_state[operation.client_seq_id]
-            command_state[1] = 102       ## State 102 -> completed
-            self.command_state[operation.client_seq_id] = [command_state[0], command_state[1]]
+            output("Client",index,":>> Result of operation ", operation.command ," is ", result)
+            val = self.command_state[operation.client_seq_id]
+            val[1] = 102       ## State 102 -> completed
+            self.command_state[operation.client_seq_id] = [val[0], val[1]]
             discard_flag = False
 
 
