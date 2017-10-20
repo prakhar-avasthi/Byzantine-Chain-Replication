@@ -7,6 +7,7 @@ class Olympus(process):
         output("Olympus:>> Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
+        self.replica_public_keys = []
 
     def run():
         output("Olympus:>> Started")
@@ -19,7 +20,7 @@ class Olympus(process):
             makeNewConfiguration()
 
         output("Olympus:>> Replying res_get_current_configuration with configuration")
-        send(('res_get_current_configuration', self.config), to=client)
+        send(('res_get_current_configuration', self.config, self.replica_public_keys), to=client)
 
     def makeNewConfiguration():
         output("Olympus:>> Making New Configuration")
@@ -51,4 +52,5 @@ class Olympus(process):
                 setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(), public_keys, private_keys[i], nonhead_timeout))
             i += 1
         self.config.list_replica = list(replicaList)
+        self.replica_public_keys = public_keys
         start(replicaList)

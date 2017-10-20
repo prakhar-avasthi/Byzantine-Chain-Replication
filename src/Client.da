@@ -7,9 +7,12 @@ class Client(process):
     def setup(olympus, index, workload, timeout):
         self.config = None
         output("Client",index,":>> workload: ", workload)
+
         self.commands = None
         self.timeout_reply = 0
         self.command_state = {}
+        self.replica_public_keys = []
+
         if not 'random' in workload:
             self.commands = workload.split(';')
         if not self.commands is None:
@@ -21,7 +24,7 @@ class Client(process):
         output("Client",index,":>> Started")
         if self.config is None:
             send(('req_get_current_configuration', self), to=olympus)
-            await(some(received(('res_get_current_configuration', config))))
+            await(some(received(('res_get_current_configuration', config, replica_public_keys))))
 
         if not self.commands is None:
             sendOperation(0)
@@ -29,6 +32,9 @@ class Client(process):
         -- l
         await(some(received(('terminate_client'))))
 
+    def receive (msg= ('res_get_current_configuration', config, replica_public_keys)):
+        self.config = config
+        self.replica_public_keys = replica_public_keys
 
     def sendOperation(key):
         command_and_state = self.command_state[key]
@@ -74,10 +80,6 @@ class Client(process):
         return operation
 
 
-    def receive (msg= ('res_get_current_configuration', config)):
-        self.config = config
-
-
     def receive (msg= ('res_operation', operation, result, result_proof_list)):
 
         discard_flag = False
@@ -89,13 +91,23 @@ class Client(process):
         HASHER = nacl.hash.sha256
         result_byte = pickle.dumps(result)
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+        unsigned_result_proof = None
 
         ## check this digest with all the results in the result_proof_list so that client believe the value is correct
+        i = 0
         for result_proof in result_proof_list:
-            output("Client",index,":>> Result received. Checking the cryptohash of each replica for operation: ", operation.command)
-            if result_proof.result != result_digest:
-                output("Client",index,":>> Cryptohash is not matching so discarding the result")
+            try:
+                unsigned_result_proof = pickle.loads(replica_public_keys[i].verify(result_proof))
+            except:
+                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
+            output("Client",index,":>> Checking the cryptohash")
+            i += 1
+            if unsigned_result_proof.result != result_digest:
+                output("Client",index,":>> Result received. Checking the cryptohash of each replica for operation: ", operation.command)
                 discard_flag = True
+                break
 
         if not discard_flag:
             output("Client",index,":>> Result of operation ", operation.command ," is ", result)
