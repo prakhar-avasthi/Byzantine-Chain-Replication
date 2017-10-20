@@ -11,6 +11,7 @@ class Replica(process):
         output("Replica",self.index,":>> Replica Started with a private key: ", self.type)
         await(some(received(('terminate_replica'))))
 
+
     def performOperation(operation):
         output("Replica",self.index,":>> perform operation: ", operation.command)
         import re
@@ -193,6 +194,7 @@ class Replica(process):
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
 
+
     # on receiving result shuttle replica will store result shuttle into its cache and start awaiting for forward shuttle
     def receive(msg = ('result_shuttle', replica, result_shuttle)):
         action = result_shuttle.action
@@ -209,10 +211,15 @@ class Replica(process):
 
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
-        output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.commands)
+        output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
+        found = False
         for action in self.history.keys():
             if action.operation.client_request_id == operation.client_request_id:
                 if action.operation.command == operation.command:
                     if action.operation.type == operation.type:
                         result_shuttle = self.history[action]
                         send(('res_operation_timeout', operation, result_shuttle.result, result_shuttle.result_proof_list), to=client)
+                        found = True
+                        break
+        if found == False and not self.type == 'head':
+            send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
