@@ -7,10 +7,17 @@ class Client(process):
     def setup(olympus, index, workload, timeout):
         self.config = None
         output("Client",index,":>> workload: ", workload)
-        self.operations = None
+
+        self.commands = None
+        self.command_state = {}
         self.replica_public_keys = []
+
         if not 'random' in workload:
-            self.operations = workload.split(';')
+            self.commands = workload.split(';')
+        if not self.commands is None:
+            for i in range(len(self.commands)):
+                self.command_state[i] = [self.commands[i], 100]       ## State 100 -> not started
+
 
     def run():
         output("Client",index,":>> Started")
@@ -18,39 +25,55 @@ class Client(process):
             send(('req_get_current_configuration', self), to=olympus)
             await(some(received(('res_get_current_configuration', config, replica_public_keys))))
 
-        #Creating an operation to be send to replica
-        if not self.operations is None:
-            for command in self.operations:
-                command = command.strip()
-                class_operation = import_da('Operation')
-                operation = class_operation.Operation()
-                operation.client_request_id = index         #sending its index to identify client
-                if 'put' in command:
-                    operation.type = 1
-                    operation.command = command[3:]
-                elif 'get' in command:
-                    operation.type = 2
-                    operation.command = command[3:]
-                elif 'slice' in command:
-                    operation.type = 3
-                    operation.command = command[5:]
-                elif 'append' in command:
-                    operation.type = 4
-                    operation.command = command[6:]
-
-                #Sending operation to HeadNode
-                output("Client",index,":>> Sending operation to Head Node: ", operation.command)
-                send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
-                if(await(some(received(('res_operation', operation, result, result_proof_list))))): pass
-                elif timeout(timeout):
-                    output("Client",index,":>> Timeout: ", operation)
+        if not self.commands is None:
+            sendOperation(0)
 
         -- l
         await(some(received(('terminate_client'))))
 
     def receive (msg= ('res_get_current_configuration', config, replica_public_keys)):
-        self.replica_public_keys = replica_public_keys
         self.config = config
+        self.replica_public_keys = replica_public_keys
+
+    def sendOperation(key):
+        command_and_state = self.command_state[key]
+        operation = makeOperation(key, command_and_state[0])
+        command_and_state[1] = 101          ## State 101 -> in progress
+        #Sending operation to HeadNode
+        output("Client",index,":>> Sending operation to Head Node: ", operation.command)
+        send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
+        self.command_state[key] = [command_and_state[0], command_and_state[1]]
+        if(await(some(received(('res_operation', operation, result, result_proof_list))))): pass
+        elif timeout(timeout):
+            output("Client",index,":>> Client Timeout.")
+            for key in self.command_state.keys():
+                val = self.command_state[key]
+                if val[1] == 101:
+                    resend_operation = makeOperation(key, val[0])
+                    for replica in self.config.list_replica:
+                        send(('req_operation_timeout', resend_operation, self, self.index), to=replica)
+
+
+    def makeOperation(seq_id, command):
+        command = command.strip()
+        class_operation = import_da('Operation')
+        operation = class_operation.Operation()
+        operation.client_seq_id = seq_id
+        operation.client_request_id = index         #sending its index to identify client
+        if 'put' in command:
+            operation.type = 1
+            operation.command = command[3:]
+        elif 'get' in command:
+            operation.type = 2
+            operation.command = command[3:]
+        elif 'slice' in command:
+            operation.type = 3
+            operation.command = command[5:]
+        elif 'append' in command:
+            operation.type = 4
+            operation.command = command[6:]
+        return operation
+
 
     def receive (msg= ('res_operation', operation, result, result_proof_list)):
 
@@ -68,7 +91,6 @@ class Client(process):
         ## check this digest with all the results in the result_proof_list so that client believe the value is correct
         i = 0
         for result_proof in result_proof_list:
-
             try:
                 unsigned_result_proof = pickle.loads(replica_public_keys[i].verify(result_proof))
             except:
@@ -78,10 +100,19 @@ class Client(process):
             output("Client",index,":>> Checking the cryptohash")
             i += 1
             if unsigned_result_proof.result != result_digest:
-                output("Client",index,":>> Cryptohash is not matching so discarding the result")
+                output("Client",index,":>> Result received. Checking the cryptohash of each replica for operation: ", operation.command)
                 discard_flag = True
                 break
 
         if not discard_flag:
-            output("Client",index,":>> Result of operation ", operation ," is ", result)
+            output("Client",index,":>> Result of operation ", operation.command ," is ", result)
+            val = self.command_state[operation.client_seq_id]
+            val[1] = 102       ## State 102 -> completed
+            self.command_state[operation.client_seq_id] = [val[0], val[1]]
+            if operation.client_seq_id+1 < len(self.commands):
+                sendOperation(operation.client_seq_id+1)
             discard_flag = False
+
+
+    def receive (msg= ('res_operation_timeout', operation, result, result_proof_list)):
+        output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)

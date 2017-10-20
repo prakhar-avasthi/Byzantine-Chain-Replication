@@ -145,11 +145,12 @@ class Replica(process):
             HASHER = nacl.hash.sha256
             result_byte = pickle.dumps(result)
             result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-
             result_proof.result= result_digest
 
             # signing result proof
             signed_result_proof = self.private_key.sign(pickle.dumps(result_proof))
+
+            ## appending result proof
             result_proof_list.append(signed_result_proof)
 
             ## output("Replica result proof size",self.index,":>>", len(result_proof_list))
@@ -189,7 +190,7 @@ class Replica(process):
             result_proof_list.append(signed_result_proof)
 
             ## send result to client
-            send(('res_operation', action.operation.command, result, result_proof_list), to=client)
+            send(('res_operation', action.operation, result, result_proof_list), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
