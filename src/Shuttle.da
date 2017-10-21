@@ -1,6 +1,6 @@
 class Shuttle:
     def __init__(self):
       self.action = None
-      self.order_proof_list = None
-      self.result_proof_list = None
+      self.order_proof = None
+      self.result_proof = None
       self.result = None

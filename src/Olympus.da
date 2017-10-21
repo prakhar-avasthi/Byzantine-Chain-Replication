@@ -45,11 +45,11 @@ class Olympus(process):
         i = 0
         for replica in replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(),public_keys, private_keys[i], head_timeout))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout))
             elif i is num_replica-1:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(),public_keys, private_keys[i], nonhead_timeout))
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(), public_keys, private_keys[i], nonhead_timeout))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout))
             i += 1
         self.config.list_replica = list(replicaList)
         self.replica_public_keys = public_keys
