@@ -3,11 +3,13 @@ import nacl.signing
 import nacl.hash
 
 class Olympus(process):
-    def setup(num_replica, head_timeout, nonhead_timeout):
+    def setup(num_replica, head_timeout, nonhead_timeout, failure_list):
         output("Olympus:>> Setup")
+        output("Failure_list is:", failure_list)
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
         self.replica_public_keys = []
+        self.replica_failure_map = {}
 
 
     def run():
@@ -41,25 +43,72 @@ class Olympus(process):
         private_keys = []
 
         for i in range(len(replicaList)):
+            import nacl
             signing_key = nacl.signing.SigningKey.generate()
             private_keys.append(signing_key)
             public_keys.append(signing_key.verify_key)
 
+        parse_failures()
+        ##output("Failure list after parsing is", self.replica_failure_map)
+
         i = 0
         for replica in replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING'))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]))
+                else:
+                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}))
             elif i is num_replica-1:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING'))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
+                else:
+                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING'))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
+                else:
+                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
             i += 1
         self.config.list_replica = list(replicaList)
         self.replica_public_keys = public_keys
         start(replicaList)
 
+    def parse_failures():
+            output("Parsing failures")
+            for failure in self.failure_list:
+                import re
+                output("###########In Loop##########")
+                failure_replica = None
+                failure_type = None
+                source = None
+                client_id = None
+                message_number = None
+
+                matches = re.findall(r"\[(.+?)\]", failure[0])
+                failure_replica = matches[0].split(",")[1]
+
+                failures_injected = failure[1].split(";")
+                for failure_type in failures_injected:
+                    failure_row = re.findall(r'(?:[^,(]|\([^)]*\))+', failure_type)
+                    matches = re.findall(r"\((.+?)\)", failure_row[0])
+                    client_id, message_number = matches[0].split(",")
+                    source = failure_row[0].split("(")[0]
+                    failure_type = failure_row[1]
+
+                output("########### Failures are #########", failure_replica, failure_type, source, client_id, message_number)
+                output("########### Map is ##############", self.replica_failure_map)
+                ##if not failure_replica in self.replica_failure_map:
+                    ##self.replica_failure_map[failure_replica] = {}
+                try:
+                    self.replica_failure_map[str(failure_replica)][str(failure_type)] = (source,(client_id, message_number))
+                except KeyError:
+                    output("############### Key Error ############",)
+                    self.replica_failure_map[str(failure_replica)] = {str(failure_type): (source,(client_id, message_number))}
+            output("###########", self.replica_failure_map)
+
 def main():
     config = {}
+    failure_list = []
     with open('config.txt','r') as f:
       for line in f:
           if line[0] != '#':
@@ -73,7 +122,11 @@ def main():
     class_client = import_da('Client')
     num_replica = 2 * config['t'] + 1
 
-    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout']), at='OlympusNode')
+    for key in config:
+        if "failures" in key:
+            failure_list.append((key,config[key]))
+
+    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], failure_list), at='OlympusNode')
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:

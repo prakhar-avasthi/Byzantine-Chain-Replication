@@ -5,7 +5,12 @@ import nacl.hash
 
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
-    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state):pass
+    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
+        output("################# Fault map is #############", self.fault_map)
+        self.forwarded_request = {}
+        self.shuttle_request = {}
+        self.direct_client_request = {}
+        self.result_shuttle_request = {}
 
     def run():
         self.state = 'ACTIVE'
@@ -56,7 +61,12 @@ class Replica(process):
         ## If the replica is head node, it will create a forward shuttle
         if self.type == 'head' and state == 'ACTIVE':
             output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
-            result = performOperation(operation)
+
+            result = None
+            try:
+                self.forwarded_request[client_index] += 1
+            except KeyError:
+                self.forwarded_request[client_index] = 1
 
             class_action = import_da('Action')
             action = class_action.Action()
@@ -68,7 +78,19 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
-            order_statement.action = action
+
+            if self.is_failure_change_operation("forwarded_request", client_index, self.forwarded_request[client_index]):
+                temp_action = deepcopy(action)
+                temp_action.operation.command = "get('X')"
+                order_statement.action = temp_action
+                result = performOperation(temp_action.operation)
+            elif self.is_failure_change_result("forwarded_request", client_index, self.forwarded_request[client_index]):
+                order_statement.action = action
+                result = "OK"
+            else:
+                order_statement.action = action
+                result = performOperation(action.operation)
+
 
             # signing order proof
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
@@ -91,7 +113,7 @@ class Replica(process):
             # signing result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             result_proof.append(signed_result_statement)
-            output("Successfully signed the result proof by head")
+            output("Replica",self.index,":>> Successfully signed the result proof by head")
 
             ## create a forward shuttle and send
             class_shuttle = import_da('Shuttle')
@@ -100,16 +122,21 @@ class Replica(process):
             forward_shuttle.order_proof = order_proof
             forward_shuttle.result_proof = result_proof
             output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
-            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
 
 
-    def receive(msg = ('forward_shuttle', replica, forward_shuttle, client)):
+    def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         action = forward_shuttle.action
         output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
-        result = performOperation(action.operation)
+
+        result = None
+        try:
+            self.shuttle_request[client_index] += 1
+        except KeyError:
+            self.shuttle_request[client_index] = 1
 
         ## fetch result proof and order proof list from the forward shuttle
         order_proof = forward_shuttle.order_proof
@@ -134,7 +161,27 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
-            order_statement.action = action
+
+            ##fault injection scenario
+            try:
+                if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",client_index, self.shuttle_request[client_index]):
+                    temp_action = deepcopy(action)
+                    temp_action.operation.command = "get('X')"
+                    order_statement.action = temp_action
+                    result = performOperation(temp_action.operation)
+                elif client_index in self.shuttle_request  and self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = "OK"
+                elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+                    result_proof.remove(0)
+                else:
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+            except Exception:
+                output("####### CULPRIT ######")
+
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             order_proof.append(signed_order_statement)
 
@@ -161,7 +208,7 @@ class Replica(process):
 
             ## send the shuttle to next replica
             output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
-            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
@@ -173,6 +220,25 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
+
+            try:
+                if self.is_failure_change_operation("shuttle", client_index, self.shuttle_request[client_index]):
+                    temp_action = deepcopy(action)
+                    temp_action.operation.command = "get('X')"
+                    order_statement.action = temp_action
+                    result = performOperation(temp_action.operation)
+                elif self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = "OK"
+                elif self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+                    result_proof.remove(0)
+                else:
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+            except Exception:
+                output("######### CULRPIT ######## ", client_index)
             order_statement.action = action
             order_proof.append(order_statement)
 
@@ -207,7 +273,7 @@ class Replica(process):
             output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle, result), to = self.replicaList[index - 1])
 
-            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timed out")
 
@@ -240,7 +306,7 @@ class Replica(process):
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
                 send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
-                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
                 elif timeout(timeout):
                     output("Replica",self.index,":>> Replica timed out")
 
@@ -266,3 +332,27 @@ class Replica(process):
                  send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
         elif self.state == 'IMMUTABLE':
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
+
+    def is_failure_change_operation(type, client, message):
+        try:
+            (source, (c,m)) = self.fault_map["change_operation()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_change_result(type, client, message):
+        try:
+            (source, (c,m)) = fault_map[ "change_result()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_drop_result_stmt(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["drop_result_stmt()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
