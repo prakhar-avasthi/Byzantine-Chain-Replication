@@ -190,7 +190,7 @@ class Replica(process):
             result_proof.append(signed_result_statement)
 
             ## send result to client
-            ##send(('res_operation', action.operation, result, result_proof), to=client)
+            send(('res_operation', action.operation, result, result_proof), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
