@@ -37,6 +37,7 @@ class Olympus(process):
             self.config.config_id += 1
 
         replicaList = []
+        replicaList = new(Replica, num= self.num_replica)
 
         public_keys = []
         private_keys = []
@@ -46,34 +47,56 @@ class Olympus(process):
             signing_key = nacl.signing.SigningKey.generate()
             private_keys.append(signing_key)
             public_keys.append(signing_key.verify_key)
-        output("############# HERE1")
         parse_failures()
 
         i = 0
-        for i in range(self.num_replica):
+        for replica in replicaList:
             if i is 0:
-                if str(i) in self.replica_failure_map:
-                    replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]))
                 else:
-                    replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}))
             elif i is num_replica-1:
-                if str(i) in self.replica_failure_map:
-                    replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
                 else:
-                    replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
             else:
-                if str(i) in self.replica_failure_map:
-                    replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                if(str(i) in self.replica_failure_map):
+                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
                 else:
-                    replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
-            start(replica)
-            replicaList.append(replica)
+                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
             i += 1
 
-        self.config.list_replica = replicaList
+        self.config.list_replica = list(replicaList)
         self.replica_public_keys = public_keys
-        for replica in replicaList:
-            send(('init_hist', list(replicaList)), to=replica)
+        start(replicaList)
+
+        #i = 0
+        #for i in range(self.num_replica):
+            #if i is 0:
+                #if str(i) in self.replica_failure_map:
+                    #replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                #else:
+                    #replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+            #elif i is num_replica-1:
+                #if str(i) in self.replica_failure_map:
+                    #replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                #else:
+                    #replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+            #else:
+                #if str(i) in self.replica_failure_map:
+                    #replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                #else:
+                    #replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+            #start(replica)
+            #replicaList.append(replica)
+            #i += 1
+
+        #self.config.list_replica = replicaList
+        #self.replica_public_keys = public_keys
+        #for replica in replicaList:
+            #send(('init_hist', list(replicaList)), to=replica)
 
     def parse_failures():
         output("Parsing failures")
@@ -120,6 +143,7 @@ class Replica(process):
 
 
     def run():
+        self.state = 'ACTIVE'
         output("Replica",self.index,":>> Replica Started with a private key: ", self.type, self.state)
         await(some(received(('terminate_replica'))))
 
