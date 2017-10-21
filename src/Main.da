@@ -1,9 +1,11 @@
+import pickle
 import nacl.encoding
 import nacl.signing
 import nacl.hash
+import sys
 
 class Olympus(process):
-    def setup(num_replica, head_timeout, nonhead_timeout):
+    def setup(num_replica, head_timeout, nonhead_timeout, cmdline):
         output("Olympus:>> Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
@@ -32,34 +34,312 @@ class Olympus(process):
         else:
             self.config.config_id += 1
 
-        class_replica = import_da('Replica')
-        replicaList = new(class_replica.Replica, num= self.num_replica)
-
+        #class_replica = import_da('Replica')
+        #replicaList = new(Replica, num= self.num_replica, at='ReplicaNode')
+        replicaList = []
         ##output("Olympus:>> Setting up Replicas with : ", signing_key)
 
         public_keys = []
         private_keys = []
 
-        for i in range(len(replicaList)):
+        for i in range(self.num_replica):
             signing_key = nacl.signing.SigningKey.generate()
             private_keys.append(signing_key)
             public_keys.append(signing_key.verify_key)
 
         i = 0
-        for replica in replicaList:
+        for i in range(self.num_replica):#replicaList:
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING'))
+                replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING'), at='ReplicaNode'+str(i))
+                start(replica)
             elif i is num_replica-1:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING'))
+                replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING'), at='ReplicaNode'+str(i))
+                start(replica)
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING'))
+                replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING'), at='ReplicaNode'+str(i))
+                start(replica)
+            replicaList.append(replica)
             i += 1
-        self.config.list_replica = list(replicaList)
+        self.config.list_replica = replicaList
         self.replica_public_keys = public_keys
-        start(replicaList)
+
+        for replica in replicaList:
+            send(('init_hist', list(replicaList)), to=replica)
+        #tart(replicaList)
+
+
+class Replica(process):
+    ##[TODO: take more parameters for the code to run successfully]
+    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state):pass
+
+    def run():
+        output("Replica",self.index,":>> Replica Started with a private key: ", self.type, self.state)
+        await(some(received(('terminate_replica'))))
+
+    def performOperation(operation):
+        output("Replica",self.index,":>> perform operation: ", operation.command)
+        import re
+        matches = re.findall(r"\'(.+?)\'", operation.command)
+
+        key = None
+        value = None
+
+        if not operation.type is 2 :
+            key = matches[0]
+            value = matches[1]
+        else:
+            key = matches[0]
+
+        if operation.type is 1:
+            self.database[key] = value
+            return 'OK'
+        elif operation.type is 2:
+            if key in self.database:
+                return self.database[key]
+            else:
+                return ''
+        elif operation.type is 3:
+            limit = value.split(':')
+            if key in self.database and len(self.database[key]) >= int(limit[1]):
+                val = self.database[key]
+                self.database[key] = val[int(limit[0]):int(limit[1])]
+                return 'OK'
+            else:
+                return 'FAIL'
+        elif operation.type is 4:
+            if key in self.database:
+                val = self.database[key]
+                list_val = val+value
+                self.database[key] = list_val
+                return 'OK'
+            else:
+                return 'FAIL'
+
+
+    def receive(msg = ('init_hist', replica_list)):
+        self.state = 'ACTIVE'
+        self.replicaList = replica_list
+
+
+    def receive(msg = ('req_operation', operation, client, client_index)):
+        ## If the replica is head node, it will create a forward shuttle
+        if self.type == 'head' and state == 'ACTIVE':
+            output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
+            result = performOperation(operation)
+
+            class_action = import_da('Action')
+            action = class_action.Action()
+            action.seq_id = 1
+            action.operation = operation
+            order_proof = []
+            result_proof = []
+
+            class_order_statement = import_da('OrderStatement')
+            order_statement = class_order_statement.OrderStatement()
+            order_statement.order = "order"
+            order_statement.action = action
+
+            # signing order proof
+            signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
+
+            order_proof.append(signed_order_statement)
+            ##output("Replica",self.index,":>> Successfully signed and appended order_statement", signed_order_statement)
+
+            class_result_statement = import_da('ResultStatement')
+            result_statement = class_result_statement.ResultStatement()
+            result_statement.result_const = "result"
+            result_statement.action = action
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+            result_statement.result= result_digest
+
+            # signing result proof
+            signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+            result_proof.append(signed_result_statement)
+            output("Successfully signed the result proof by head")
+
+            ## create a forward shuttle and send
+            class_shuttle = import_da('Shuttle')
+            forward_shuttle = class_shuttle.Shuttle()
+            forward_shuttle.action = action
+            forward_shuttle.order_proof = order_proof
+            forward_shuttle.result_proof = result_proof
+            output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
+            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
+            elif timeout(timeout):
+                output("Replica",self.index,":>> Replica timedout")
+
+
+    def receive(msg = ('forward_shuttle', replica, forward_shuttle, client)):
+        action = forward_shuttle.action
+        output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
+        result = performOperation(action.operation)
+
+        ## fetch result proof and order proof list from the forward shuttle
+        order_proof = forward_shuttle.order_proof
+        result_proof = forward_shuttle.result_proof
+
+        ##validating the orderproof
+        for i in range(len(order_proof)) :
+            try:
+                public_keys[i].verify(order_proof[i])
+            except Exception:
+                output("Replica",self.index,":>> Key doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                self.state = 'IMMUTABLE'
+                send(('wedged', self, self.index, self.database), to = olympus)
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
+        ## normal replica will fetch the order and result proof list and add its own and send to next replica
+        if type == 'normal_replica' and state == 'ACTIVE':
+
+            verify_key = self.private_key.verify_key
+
+            ## make its own order proof and append it to the order proof list
+            class_order_statement = import_da('OrderStatement')
+            order_statement = class_order_statement.OrderStatement()
+            order_statement.order = "order"
+            order_statement.action = action
+            signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
+            order_proof.append(signed_order_statement)
+
+            ## make its own result proof and append it to the result proof list
+            class_result_statement = import_da('ResultStatement')
+            result_statement = class_result_statement.ResultStatement()
+            result_statement.result_const = "result"
+            result_statement.action = action
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+            result_statement.result= result_digest
+
+            # signing result proof
+            signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+
+            ## appending result proof
+            result_proof.append(signed_result_statement)
+
+            ## output("Replica result proof size",self.index,":>>", len(result_proof))
+            ## output("Replica order proof size",self.index,":>>", len(order_proof))
+
+            ## send the shuttle to next replica
+            output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
+            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
+            elif timeout(timeout):
+                output("Replica",self.index,":>> Replica timedout")
+
+        ## If replica is a tail node, it will create a result shuttle
+        if type == 'tail' and state == 'ACTIVE':
+
+            ## make its own order proof and append it to the order proof list
+            class_order_statement = import_da('OrderStatement')
+            order_statement = class_order_statement.OrderStatement()
+            order_statement.order = "order"
+            order_statement.action = action
+            order_proof.append(order_statement)
+
+            ## make its own result proof and append it to the result proof list
+            class_result_statement = import_da('ResultStatement')
+            result_statement = class_result_statement.ResultStatement()
+            result_statement.result_const = "result"
+            result_statement.action = action
+
+            ## calculate the result digest
+            HASHER = nacl.hash.sha256
+            result_byte = pickle.dumps(result)
+            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+            result_statement.result = result_digest
+
+            # signing result proof
+            signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+            result_proof.append(signed_result_statement)
+
+            ## send result to client
+            send(('res_operation', action.operation, result, result_proof), to=client)
+            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
+
+            ## make a new result shuttle
+            class_shuttle = import_da('Shuttle')
+            result_shuttle = class_shuttle.Shuttle()
+
+            result_shuttle.action = action
+            ##result_shuttle.order_proof = order_proof
+            result_shuttle.result_proof = result_proof
+            self.history[action] = (result_shuttle, result)
+            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
+            send(('result_shuttle', self, result_shuttle, result), to = self.replicaList[index - 1])
+
+            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+            elif timeout(timeout):
+                output("Replica",self.index,":>> Replica timed out")
+
+    ## [TODO] take result as a parameter too
+    ## [TODO] validate the result shuttle
+    # on receiving result shuttle replica will store result shuttle into its cache and start awaiting for forward shuttle
+    def receive(msg = ('result_shuttle', replica, result_shuttle, result)):
+
+        flag_not_verified = False
+
+        ## validating result proof
+        for i in range(len(result_shuttle.result_proof)):
+            try:
+                public_keys[i].verify(result_shuttle.result_proof[i])
+            except Exception:
+                flag_not_verified = True
+                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                self.state = 'IMMUTABLE'
+                send(('wedged', self, self.index, self.database), to = olympus)
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
+        ## if result proof is verified
+        if not flag_not_verified  and state == 'ACTIVE':
+            action = result_shuttle.action
+            self.history[action] = (result_shuttle, result)
+            output("Replica",self.index,":>> Got a result shuttle and its verified", self.history[action])
+            output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.command)
+
+            if not type == 'head' and state == 'ACTIVE':
+                ## send the shuttle to next replica
+                output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
+                send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
+                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+                elif timeout(timeout):
+                    output("Replica",self.index,":>> Replica timed out")
+
+    def receive(msg = ('req_operation_timeout', operation, client, client_index)):
+        if self.state == 'ACTIVE':
+             output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
+             found = False
+             for action in self.history.keys():
+                 if action.operation.client_request_id == operation.client_request_id:
+                     if action.operation.command == operation.command:
+                         if action.operation.type == operation.type:
+
+                             try:
+                                (result_shuttle, result) = self.history[action]
+                                output("Replica",self.index,":####################", result_shuttle.result_proof)
+
+                                send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
+                             except Exception:
+                                output(self.index, 'Error')
+                             found = True
+                             break
+             if found == False and not self.type == 'head':
+                 send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
+        elif self.state == 'IMMUTABLE':
+            send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
+
 
 def main():
     config = {}
+    cmdline = ""#sys.argv[1]
     with open('config.txt','r') as f:
       for line in f:
           if line[0] != '#':
@@ -73,7 +353,7 @@ def main():
     class_client = import_da('Client')
     num_replica = 2 * config['t'] + 1
 
-    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout']), at='OlympusNode')
+    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], cmdline), at='OlympusNode')
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:
