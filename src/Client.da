@@ -119,7 +119,7 @@ class Client(process):
             discard_flag = False
 
 
-    def receive (msg= ('res_operation_timeout', operation, result, result_proof)):
+    def receive (msg= ('res_operation_timeout', operation, result_proof, result)):
         output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
         self.timeout_reply += 1
         if self.timeout_reply > len(self.config.list_replica)/2:
