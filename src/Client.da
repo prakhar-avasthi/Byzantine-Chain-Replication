@@ -5,6 +5,7 @@ import nacl.hash
 
 class Client(process):
     def setup(olympus, index, workload, timeout):
+        import re
         self.config = None
         output("Client",index,":>> workload: ", workload)
 
@@ -15,9 +16,40 @@ class Client(process):
 
         if not 'random' in workload:
             self.commands = workload.split(';')
+        else:
+            matches = workload[workload.index("(") + 1:workload.index(")")].split(',')
+            seq_seed = int(matches[0])
+            seq_len = int(matches[1])
+            generatePseudoRandomWorkLoad(seq_seed, seq_len)
         if not self.commands is None:
             for i in range(len(self.commands)):
                 self.command_state[i] = [self.commands[i], 100]       ## State 100 -> not started
+
+
+    def generatePseudoRandomWorkLoad(seq_seed, seq_len):
+        import random
+        keys = ['hello','ice','moon','country']
+        value = ['world','hockey','walk','India']
+        commands = list()
+        seq = list(range(seq_len))
+        random.seed(seq_seed)
+        random_seq = random.sample(seq, seq_len)
+        for val in random_seq:
+            randkey = random.randint(0,3)
+            randval = random.randint(0,3)
+            if val%4 == 0:
+                data = 'put(\''+keys[randkey]+'\',\''+value[randval]+'\')'
+                commands.append(data)
+            elif val%4 == 1:
+                data = 'append(\''+keys[randkey]+'\',\''+value[randval]+'\')'
+                commands.append(data)
+            elif val%4 == 2:
+                data = 'get(\''+keys[randkey]+'\')'
+                commands.append(data)
+            elif val%4 == 3:
+                data = 'slice(\''+keys[randkey]+'\',\'0:4\')'
+                commands.append(data)
+        output(commands)
 
 
     def run():
