@@ -11,6 +11,7 @@ class Client(process):
 
         self.commands = None
         self.timeout_reply = 0
+        self.error_in_replica = 0
         self.command_state = {}
         self.replica_public_keys = []
 
@@ -81,6 +82,7 @@ class Client(process):
         if(await(some(received(('res_operation', operation, result, result_proof))))): pass
         elif timeout(timeout):
             self.timeout_reply = 0
+            self.error_in_replica = 0
             output("Client",index,":>> Client Timeout.")
             for key in self.command_state.keys():
                 val = self.command_state[key]
@@ -88,7 +90,7 @@ class Client(process):
                     resend_operation = makeOperation(key, val[0])
                     for replica in self.config.list_replica:
                         send(('req_operation_timeout', resend_operation, self, self.index), to=replica)
-                    if await(self.timeout_reply > len(self.config.list_replica)/2): pass
+                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0): pass
                     elif timeout(timeout):
                         output("Client",index,":>> Not received from Quoram, Terminate System.")
 
@@ -133,7 +135,7 @@ class Client(process):
             try:
                 unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
             except:
-                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+                output("Client",self.index,":>> Key doesnot verify so terminating the Client")
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
             output("Client",index,":>> Checking the cryptohash")
@@ -155,11 +157,15 @@ class Client(process):
             discard_flag = False
 
 
-    def receive (msg= ('res_operation_timeout', operation, result_proof, result)):
-        output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
-        self.timeout_reply += 1
-        if self.timeout_reply > len(self.config.list_replica)/2:
-            output("Client",index,":>> Got from Quoram")
+    def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
+        if error is None:
+            output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
+            self.timeout_reply += 1
+            if self.timeout_reply > len(self.config.list_replica)/2:
+                output("Client",index,":>> Got from Quoram")
+        else:
+            output("Client",self.index,":>> Replica: ", replica_index, " is Immutable, Requesting Olympus for new Config.")
+            self.error_in_replica += 1
 
 
     def checkIfWeHaveExpectedContent():pass

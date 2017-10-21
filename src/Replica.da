@@ -5,10 +5,11 @@ import nacl.hash
 
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
-    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout): pass
+    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state):pass
 
     def run():
-        output("Replica",self.index,":>> Replica Started with a private key: ", self.type)
+        self.state = 'ACTIVE'
+        output("Replica",self.index,":>> Replica Started with a private key: ", self.type, self.state)
         await(some(received(('terminate_replica'))))
 
     def performOperation(operation):
@@ -52,11 +53,11 @@ class Replica(process):
 
 
     def receive(msg = ('req_operation', operation, client, client_index)):
-        output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
-        result = performOperation(operation)
-
         ## If the replica is head node, it will create a forward shuttle
-        if self.type == 'head' :
+        if self.type == 'head' and state == 'ACTIVE':
+            output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
+            result = performOperation(operation)
+
             class_action = import_da('Action')
             action = class_action.Action()
             action.seq_id = 1
@@ -118,12 +119,14 @@ class Replica(process):
         for i in range(len(order_proof)) :
             try:
                 public_keys[i].verify(order_proof[i])
-            except:
-                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+            except Exception:
+                output("Replica",self.index,":>> Key doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                self.state = 'IMMUTABLE'
+                send(('wedged', self, self.index, self.database), to = olympus)
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
         ## normal replica will fetch the order and result proof list and add its own and send to next replica
-        if type == 'normal_replica' :
+        if type == 'normal_replica' and state == 'ACTIVE':
 
             verify_key = self.private_key.verify_key
 
@@ -164,7 +167,7 @@ class Replica(process):
                 output("Replica",self.index,":>> Replica timedout")
 
         ## If replica is a tail node, it will create a result shuttle
-        if type == 'tail' :
+        if type == 'tail' and state == 'ACTIVE':
 
             ## make its own order proof and append it to the order proof list
             class_order_statement = import_da('OrderStatement')
@@ -219,19 +222,21 @@ class Replica(process):
         for i in range(len(result_shuttle.result_proof)):
             try:
                 public_keys[i].verify(result_shuttle.result_proof[i])
-            except:
-                output("Replica",self.index,":>> Key doesnot verify so terminating the replica")
+            except Exception:
                 flag_not_verified = True
+                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                self.state = 'IMMUTABLE'
+                send(('wedged', self, self.index, self.database), to = olympus)
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
         ## if result proof is verified
-        if not flag_not_verified:
+        if not flag_not_verified  and state == 'ACTIVE':
             action = result_shuttle.action
             self.history[action] = (result_shuttle, result)
             output("Replica",self.index,":>> Got a result shuttle and its verified", self.history[action])
             output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.command)
 
-            if not type == 'head':
+            if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
                 send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
@@ -240,21 +245,24 @@ class Replica(process):
                     output("Replica",self.index,":>> Replica timed out")
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
-         output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
-         found = False
-         for action in self.history.keys():
-             if action.operation.client_request_id == operation.client_request_id:
-                 if action.operation.command == operation.command:
-                     if action.operation.type == operation.type:
+        if self.state == 'ACTIVE':
+             output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
+             found = False
+             for action in self.history.keys():
+                 if action.operation.client_request_id == operation.client_request_id:
+                     if action.operation.command == operation.command:
+                         if action.operation.type == operation.type:
 
-                         try:
-                            (result_shuttle, result) = self.history[action]
-                            output("Replica",self.index,":####################", result_shuttle.result_proof)
+                             try:
+                                (result_shuttle, result) = self.history[action]
+                                output("Replica",self.index,":####################", result_shuttle.result_proof)
 
-                            send(('res_operation_timeout', operation, result_shuttle.result_proof, result), to=client)
-                         except Exception:
-                            output(self.index, 'Error')
-                         found = True
-                         break
-         if found == False and not self.type == 'head':
-             send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
+                                send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
+                             except Exception:
+                                output(self.index, 'Error')
+                             found = True
+                             break
+             if found == False and not self.type == 'head':
+                 send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
+        elif self.state == 'IMMUTABLE':
+            send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
