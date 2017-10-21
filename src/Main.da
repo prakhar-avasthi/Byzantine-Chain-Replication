@@ -5,11 +5,13 @@ import nacl.hash
 import sys
 
 class Olympus(process):
-    def setup(num_replica, head_timeout, nonhead_timeout, cmdline):
+    def setup(num_replica, head_timeout, nonhead_timeout, failure_list):
         output("Olympus:>> Setup")
+        output("Failure_list is:", failure_list)
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
         self.replica_public_keys = []
+        self.replica_failure_map = {}
 
 
     def run():
@@ -19,7 +21,7 @@ class Olympus(process):
 
     def receive(msg = ('req_get_current_configuration', client)):
         output("Olympus:>> Received req_get_current_configuration from Client")
-        if self.config.config_id is None or self.config.config_id is None:
+        if self.config.config_id is None:
             output("Olympus:>> Configuration is NONE")
             makeNewConfiguration()
 
@@ -34,47 +36,93 @@ class Olympus(process):
         else:
             self.config.config_id += 1
 
-        #class_replica = import_da('Replica')
-        #replicaList = new(Replica, num= self.num_replica, at='ReplicaNode')
         replicaList = []
-        ##output("Olympus:>> Setting up Replicas with : ", signing_key)
 
         public_keys = []
         private_keys = []
 
         for i in range(self.num_replica):
+            import nacl
             signing_key = nacl.signing.SigningKey.generate()
             private_keys.append(signing_key)
             public_keys.append(signing_key.verify_key)
+        output("############# HERE1")
+        parse_failures()
 
         i = 0
-        for i in range(self.num_replica):#replicaList:
+        for i in range(self.num_replica):
             if i is 0:
-                replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING'), at='ReplicaNode'+str(i))
-                start(replica)
+                if str(i) in self.replica_failure_map:
+                    replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                else:
+                    replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
             elif i is num_replica-1:
-                replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING'), at='ReplicaNode'+str(i))
-                start(replica)
+                if str(i) in self.replica_failure_map:
+                    replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                else:
+                    replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
             else:
-                replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING'), at='ReplicaNode'+str(i))
-                start(replica)
+                if str(i) in self.replica_failure_map:
+                    replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
+                else:
+                    replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
+            start(replica)
             replicaList.append(replica)
             i += 1
+
         self.config.list_replica = replicaList
         self.replica_public_keys = public_keys
-
         for replica in replicaList:
             send(('init_hist', list(replicaList)), to=replica)
-        #tart(replicaList)
+
+    def parse_failures():
+        output("Parsing failures")
+        for failure in self.failure_list:
+            import re
+            output("###########In Loop##########")
+            failure_replica = None
+            failure_type = None
+            source = None
+            client_id = None
+            message_number = None
+
+            matches = re.findall(r"\[(.+?)\]", failure[0])
+            failure_replica = matches[0].split(",")[1]
+
+            failures_injected = failure[1].split(";")
+            for failure_type in failures_injected:
+                failure_row = re.findall(r'(?:[^,(]|\([^)]*\))+', failure_type)
+                matches = re.findall(r"\((.+?)\)", failure_row[0])
+                client_id, message_number = matches[0].split(",")
+                source = failure_row[0].split("(")[0]
+                failure_type = failure_row[1]
+
+            output("########### Failures are #########", failure_replica, failure_type, source, client_id, message_number)
+            output("########### Map is ##############", self.replica_failure_map)
+            ##if not failure_replica in self.replica_failure_map:
+                ##self.replica_failure_map[failure_replica] = {}
+            try:
+                self.replica_failure_map[str(failure_replica)][str(failure_type)] = (source,(client_id, message_number))
+            except KeyError:
+                output("############### Key Error ############",)
+                self.replica_failure_map[str(failure_replica)] = {str(failure_type): (source,(client_id, message_number))}
+        output("###########", self.replica_failure_map)
 
 
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
-    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state):pass
+    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
+        output("################# Fault map is #############", self.fault_map)
+        self.forwarded_request = {}
+        self.shuttle_request = {}
+        self.direct_client_request = {}
+        self.result_shuttle_request = {}
+
 
     def run():
         output("Replica",self.index,":>> Replica Started with a private key: ", self.type, self.state)
         await(some(received(('terminate_replica'))))
+
 
     def performOperation(operation):
         output("Replica",self.index,":>> perform operation: ", operation.command)
@@ -125,7 +173,12 @@ class Replica(process):
         ## If the replica is head node, it will create a forward shuttle
         if self.type == 'head' and state == 'ACTIVE':
             output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
-            result = performOperation(operation)
+
+            result = None
+            try:
+                self.forwarded_request[client_index] += 1
+            except KeyError:
+                self.forwarded_request[client_index] = 1
 
             class_action = import_da('Action')
             action = class_action.Action()
@@ -137,7 +190,19 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
-            order_statement.action = action
+
+            if self.is_failure_change_operation("forwarded_request", client_index, self.forwarded_request[client_index]):
+                temp_action = deepcopy(action)
+                temp_action.operation.command = "get('X')"
+                order_statement.action = temp_action
+                result = performOperation(temp_action.operation)
+            elif self.is_failure_change_result("forwarded_request", client_index, self.forwarded_request[client_index]):
+                order_statement.action = action
+                result = "OK"
+            else:
+                order_statement.action = action
+                result = performOperation(action.operation)
+
 
             # signing order proof
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
@@ -160,7 +225,7 @@ class Replica(process):
             # signing result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             result_proof.append(signed_result_statement)
-            output("Successfully signed the result proof by head")
+            output("Replica",self.index,":>> Successfully signed the result proof by head")
 
             ## create a forward shuttle and send
             class_shuttle = import_da('Shuttle')
@@ -169,16 +234,21 @@ class Replica(process):
             forward_shuttle.order_proof = order_proof
             forward_shuttle.result_proof = result_proof
             output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
-            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
 
 
-    def receive(msg = ('forward_shuttle', replica, forward_shuttle, client)):
+    def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         action = forward_shuttle.action
         output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
-        result = performOperation(action.operation)
+
+        result = None
+        try:
+            self.shuttle_request[client_index] += 1
+        except KeyError:
+            self.shuttle_request[client_index] = 1
 
         ## fetch result proof and order proof list from the forward shuttle
         order_proof = forward_shuttle.order_proof
@@ -203,7 +273,27 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
-            order_statement.action = action
+
+            ##fault injection scenario
+            try:
+                if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",client_index, self.shuttle_request[client_index]):
+                    temp_action = deepcopy(action)
+                    temp_action.operation.command = "get('X')"
+                    order_statement.action = temp_action
+                    result = performOperation(temp_action.operation)
+                elif client_index in self.shuttle_request  and self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = "OK"
+                elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+                    result_proof.remove(0)
+                else:
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+            except Exception:
+                output("####### CULPRIT ######")
+
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             order_proof.append(signed_order_statement)
 
@@ -230,7 +320,7 @@ class Replica(process):
 
             ## send the shuttle to next replica
             output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
-            send(('forward_shuttle', self, forward_shuttle, client), to = self.replicaList[index + 1])
+            send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
             if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timedout")
@@ -242,6 +332,25 @@ class Replica(process):
             class_order_statement = import_da('OrderStatement')
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
+
+            try:
+                if self.is_failure_change_operation("shuttle", client_index, self.shuttle_request[client_index]):
+                    temp_action = deepcopy(action)
+                    temp_action.operation.command = "get('X')"
+                    order_statement.action = temp_action
+                    result = performOperation(temp_action.operation)
+                elif self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = "OK"
+                elif self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+                    result_proof.remove(0)
+                else:
+                    order_statement.action = action
+                    result = performOperation(action.operation)
+            except Exception:
+                output("######### CULRPIT ######## ", client_index)
             order_statement.action = action
             order_proof.append(order_statement)
 
@@ -276,7 +385,7 @@ class Replica(process):
             output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle, result), to = self.replicaList[index - 1])
 
-            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
             elif timeout(timeout):
                 output("Replica",self.index,":>> Replica timed out")
 
@@ -309,7 +418,7 @@ class Replica(process):
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
                 send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
-                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client))))):pass
+                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
                 elif timeout(timeout):
                     output("Replica",self.index,":>> Replica timed out")
 
@@ -336,10 +445,36 @@ class Replica(process):
         elif self.state == 'IMMUTABLE':
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
 
+    def is_failure_change_operation(type, client, message):
+        try:
+            (source, (c,m)) = self.fault_map["change_operation()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_change_result(type, client, message):
+        try:
+            (source, (c,m)) = fault_map[ "change_result()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_drop_result_stmt(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["drop_result_stmt()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+
+
 
 def main():
     config = {}
-    cmdline = ""#sys.argv[1]
+    failure_list = []
     with open('config.txt','r') as f:
       for line in f:
           if line[0] != '#':
@@ -353,7 +488,11 @@ def main():
     class_client = import_da('Client')
     num_replica = 2 * config['t'] + 1
 
-    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], cmdline), at='OlympusNode')
+    for key in config:
+        if "failures" in key:
+            failure_list.append((key,config[key]))
+
+    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], failure_list), at='OlympusNode')
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:
