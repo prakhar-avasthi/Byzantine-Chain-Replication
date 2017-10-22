@@ -45,7 +45,7 @@
 2. Rajat Jain (@github/jainraj91)
    - **Responsibilities:**
      - Implemented initial required class files.
-     - Implemented functions in Replica node.
+     - Implemented head, replica and tail related functionalities in Replica node.
      - Implemented parsing config file.
      - Implemented Sending of result from Tail Replica to Client.
      - Implemented Implemented generating result hash and Signing of order and result statement at Client.
