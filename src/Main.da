@@ -213,6 +213,7 @@ class Replica(process):
         is_valid = validate_order_proof(action,order_proof)
 
         if not is_valid:
+            output("Replica",self.index,":>> Order proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
             self.state = 'IMMUTABLE'
             send(('wedged', self, self.index, self.database), to = olympus)
 
@@ -231,7 +232,7 @@ class Replica(process):
             if client_index in self.shuttle_request and\
                 self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":]Change Operation Fault Injected, Client ", client_index, ", Request ",self.shuttle_request[client_index])
-                order_statement = self.change_operation(action, order_statment)
+                order_statement = self.change_operation(action, order_statement)
                 result = performOperation(order_statment.action)
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
@@ -410,10 +411,10 @@ class Replica(process):
 
     def receive(msg = ('req_operation_timeout', operation, source, client, client_index)):
         if self.state == 'ACTIVE':
-            if source == "client":
-                output("[Replica",self.index,":]<< req_operation_timeout, Client: ", client_index, ", Operation: ", operation.toString())
-            else:
-                output("[Replica",self.index,":]<< req_operation_timeout, from Replica[no history], Client: ", client_index, ", operation: ", operation.toString())
+            ##if source == "client":
+                ##output("[Replica",self.index,":]<< req_operation_timeout, Client: ", client_index, ", Operation: ", operation.toString())
+            ##else:
+                ##output("[Replica",self.index,":]<< req_operation_timeout, from Replica without history, Client: ", client_index, ", operation: ", operation.toString())
             (found_in_history, action) = foundInHistory(operation)
 
             if found_in_history == True:
@@ -436,8 +437,10 @@ class Replica(process):
                     else:
                         self.forwarded_request[client_index] = 1
 
-                message_number = str(self.direct_client_request[client_index]) if source == "client" else str(self.forwarded_request[client_index])
-
+                try:
+                    message_number = str(self.direct_client_request[client_index]) if source == "client" else str(self.forwarded_request[client_index])
+                except:
+                    output("############### CULPRIT FOUND ###################")
                 if client_index in self.shuttle_request and self.is_failure_change_result(fault_trigger, str(client_index), message_number):
                     output("[Replica",self.index,":] Fault: Change Result,Client ", client_index, ", Request ",message_number)
                     temp_result = "OK"
@@ -456,7 +459,7 @@ class Replica(process):
                     result_shuttle.result_proof[self.index] = signed_result_statement
 
                 elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt(fault_trigger, str(client_index), message_number):
-                    output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.direct_client_request[client_index])
+                    output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",message_number)
                     del result_shuttle.result_proof[0]
 
                 output("[Replica",self.index,":]>> res_operation_timeout to Client: ", operation.toString(), " result: ", result)
@@ -471,8 +474,10 @@ class Replica(process):
                 elif timeout(self.timeout):
                     output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                     self.waiting_for_result[operation.client_request_id] = (0, None)
+
             elif found_in_history == False and self.type == 'head':
-                if operation.client_seq_id > self.forwarded_request[client_index]:
+
+                if operation.client_seq_id > self.current_slot_id[client_index]:
                     #treat as new request
                     send(('req_operation', operation, client, client.index), to=self)
                 else:
@@ -482,6 +487,7 @@ class Replica(process):
                     elif timeout(self.timeout):
                         output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                         self.waiting_for_result[operation.client_request_id] = (0, None)
+                        
         elif self.state == 'IMMUTABLE':
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
 
