@@ -123,6 +123,7 @@ class Client(process):
         copy_result = result
 
         ## calculate the result hash from the result it get
+
         ## calculate the result digest
         HASHER = nacl.hash.sha256
         result_byte = pickle.dumps(result)
@@ -141,7 +142,7 @@ class Client(process):
             output("Client",index,":>> Checking the cryptohash")
             i += 1
             if unsigned_result_statement.result != result_digest:
-                output("Client",index,":>> Result received. Checking the cryptohash of each replica for operation: ", operation.command)
+                output("Client",index,":>> Result is not verified hence reconfiguration")
                 discard_flag = True
                 break
 
