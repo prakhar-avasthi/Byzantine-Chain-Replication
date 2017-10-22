@@ -3,7 +3,6 @@ import nacl.encoding
 import nacl.signing
 import nacl.hash
 import sys
-import copy
 
 class Olympus(process):
     def setup(num_replica, head_timeout, nonhead_timeout, failure_list):
@@ -47,7 +46,9 @@ class Olympus(process):
             import nacl
             signing_key = nacl.signing.SigningKey.generate()
             private_keys.append(signing_key)
-            public_keys.append(signing_key.verify_key)
+            verify_key = signing_key.verify_key
+            verify_key_hex = verify_key.encode(encoder=nacl.encoding.HexEncoder)
+            public_keys.append(verify_key_hex)
         parse_failures()
 
         i = 0
@@ -222,8 +223,9 @@ class Replica(process):
 
         ##validating the orderproof
         for i in range(len(order_proof)) :
+            verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
             try:
-                public_keys[i].verify(order_proof[i])
+                verify_key.verify(order_proof[i])
             except Exception:
                 output("Replica",self.index,":>> Key doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
                 self.state = 'IMMUTABLE'
@@ -241,14 +243,17 @@ class Replica(process):
             order_statement.order = "order"
 
             ##fault injection scenario
-            if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
+            if client_index in self.shuttle_request and\
+                self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
                 order_statement = self.change_operation(action, order_statment)
                 result = performOperation(order_statment.action)
-            elif client_index in self.shuttle_request and self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            elif client_index in self.shuttle_request and\
+                self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = "OK"
-            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            elif client_index in self.shuttle_request and\
+                self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
@@ -293,15 +298,18 @@ class Replica(process):
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
 
-
-            if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            ## failure inject scenario
+            if client_index in self.shuttle_request and\
+               self.is_failure_change_operation("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 order_statement = self.change_operation(action, order_statment)
                 result = performOperation(order_statment.action)
-            elif client_index in self.shuttle_request and  self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            elif client_index in self.shuttle_request and\
+                self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = "OK"
-            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            elif client_index in self.shuttle_request and\
+                self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
@@ -338,31 +346,30 @@ class Replica(process):
             result_shuttle.action = action
             ##result_shuttle.order_proof = order_proof
             result_shuttle.result_proof = result_proof
-            self.history[action] = (result_shuttle, result)
-            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
-            send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
+
+            ## validate result proof
+            is_valid = validate_result_proof(result_shuttle.result_proof)
+            if not is_valid:
+                self.state = 'IMMUTABLE'
+                send(('wedged', self, self.index, self.database), to = olympus)
+            else:
+                self.history[action] = (result_shuttle, result)
+                output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
+                send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
 
 
-    ## [TODO] take result as a parameter too
-    ## [TODO] validate the result shuttle
     # on receiving result shuttle replica will store result shuttle into its cache and start awaiting for forward shuttle
     def receive(msg = ('result_shuttle', replica, result_shuttle, result, client_index)):
 
-        flag_not_verified = False
-
         ## validating result proof
-        for i in range(len(result_shuttle.result_proof)):
-            try:
-                public_keys[i].verify(result_shuttle.result_proof[i])
-            except Exception:
-                flag_not_verified = True
-                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
-                self.state = 'IMMUTABLE'
-                send(('wedged', self, self.index, self.database), to = olympus)
-                ##send(('terminate_shuttle', to = self.replicaList[index])
+        is_valid = validate_result_proof(result_shuttle.result_proof)
+
+        if not is_valid:
+            self.state = 'IMMUTABLE'
+            send(('wedged', self, self.index, self.database), to = olympus)
 
         ## if result proof is verified
-        if not flag_not_verified  and state == 'ACTIVE':
+        if is_valid  and state == 'ACTIVE':
             action = result_shuttle.action
             self.history[action] = (result_shuttle, result)
 
@@ -384,7 +391,8 @@ class Replica(process):
                 self.result_shuttle_request[client_index] = 1
 
             ## fault injection scenario
-            if client_index in self.shuttle_request and self.is_failure_change_result("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
+            if client_index in self.shuttle_request\
+                and self.is_failure_change_result("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.result_shuttle_request[client_index])
                 temp_result = "OK"
 
@@ -393,14 +401,16 @@ class Replica(process):
 
                 ## unsign the result statement and overwrite the new result
                 result_statement = result_shuttle.result_proof[self.index]
-                unsigned_result_statement = pickle.loads(self.public_keys[self.index].verify(result_statement))
+                verify_key = nacl.signing.VerifyKey(public_keys[self.index], encoder=nacl.encoding.HexEncoder)
+                unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
                 unsigned_result_statement.result = result_digest
 
                 ## resign the result_statement and replace it in result_proof
                 signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
                 result_shuttle.result_proof[self.index] = signed_result_statement
 
-            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
+            elif client_index in self.shuttle_request\
+                and self.is_failure_drop_result_stmt("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.result_shuttle_request[client_index])
                 del result_shuttle.result_proof[0]
 
@@ -449,7 +459,8 @@ class Replica(process):
 
                     ## un-sign the result statement and overwrite the new result
                     result_statement = result_shuttle.result_proof[self.index]
-                    unsigned_result_statement = pickle.loads(self.public_keys[self.index].verify(result_statement))
+                    verify_key = nacl.signing.VerifyKey(self.public_keys[self.index], encoder=nacl.encoding.HexEncoder)
+                    unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
                     unsigned_result_statement.result = result_digest
 
                     ## re-sign the result_statement and replace it in result_proof
@@ -523,9 +534,14 @@ class Replica(process):
 
     def change_operation(action, order_statement) :
         output("Replica",self.index,":>> !!!!!! Changing operation from ", action.operation.command , " to get('X') !!!!!!!")
-        temp_action = copy.deepcopy(action)
+        class_action = import_da('Action')
+        temp_action = class_action.Action()
+
+        temp_action.seq_id = action.seq_id
+        temp_action.operation = action.operation
         temp_action.operation.type = 2
         temp_action.operation.command = "('X')"
+
         order_statement.action = temp_action
         return order_statement
 
@@ -534,6 +550,18 @@ class Replica(process):
         result_byte = pickle.dumps(result)
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
         return result_digest
+
+    def validate_result_proof(result_proof):
+        import nacl
+        for i in range(len(result_proof)):
+            verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
+            try:
+                verify_key.verify(result_proof[i])
+            except Exception:
+                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                return False
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+        return True
 
 def main():
     config = {}

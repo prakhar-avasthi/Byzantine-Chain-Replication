@@ -236,7 +236,8 @@ class Client(process):
         i = 0
         for result_statement in result_proof:
             try:
-                unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
+                verify_key = nacl.signing.VerifyKey(replica_public_keys[i], encoder=nacl.encoding.HexEncoder)
+                unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
                 output("Client",self.index,":>>statement: ", unsigned_result_statement.result)
             except:
                 output("Client",self.index,":>> Key doesnot verify so terminating the Client")
