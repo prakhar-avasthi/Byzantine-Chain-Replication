@@ -21,3 +21,13 @@ class Operation:
         elif self.type == 4:
             action = "append"
         return action+self.command
+
+
+    def isEqual(self, operation):
+        if (self.type == operation.type
+            and self.client_seq_id == operation.client_seq_id
+            and self.client_request_id == operation.client_request_id
+            and self.command == operation.command):
+            return True
+        else:
+            return False

@@ -220,7 +220,7 @@ class Replica(process):
         result_proof = forward_shuttle.result_proof
 
         ##validating the orderproof
-        is_valid = validate_order_proof(order_proof)
+        is_valid = validate_order_proof(action, order_proof)
         if not is_valid:
             self.state = 'IMMUTABLE'
             send(('wedged', self, self.index, self.database), to = olympus)
@@ -318,7 +318,8 @@ class Replica(process):
             result_statement.action = action
 
             ## calculate the result digest
-            result_statement.result = calculate_result_digest(result)
+            result_digest = calculate_result_digest(result)
+            result_statement.result = result_digest
 
             # signing result statement
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
@@ -336,7 +337,7 @@ class Replica(process):
             result_shuttle.result_proof = result_proof
 
             ## validate result proof
-            is_valid = validate_result_proof(result_shuttle.result_proof)
+            is_valid = validate_result_proof(result_digest, result_shuttle.result_proof)
 
             ## if not valid, enter into IMMUTABLE state else add it into its history and send to previous replica
             if not is_valid:
@@ -352,7 +353,9 @@ class Replica(process):
     def receive(msg = ('result_shuttle', replica, result_shuttle, result, client_index)):
 
         ## validating result proof
-        is_valid = validate_result_proof(result_shuttle.result_proof)
+        temp_result = result
+        result_digest = calculate_result_digest(temp_result)
+        is_valid = validate_result_proof(result_digest, result_shuttle.result_proof)
 
         if not is_valid:
             self.state = 'IMMUTABLE'
@@ -374,7 +377,6 @@ class Replica(process):
             output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.toString())
 
             ## fault injection case
-            result = None
             try:
                 self.result_shuttle_request[client_index] += 1
             except KeyError:
@@ -541,23 +543,31 @@ class Replica(process):
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
         return result_digest
 
-    def validate_result_proof(result_proof):
+    def validate_result_proof(result, result_proof):
         for i in range(len(result_proof)):
             verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
             try:
-                verify_key.verify(result_proof[i])
+                unsigned_result_statement = pickle.loads(verify_key.verify(result_proof[i]))
+                if(unsigned_result_statement.result != result):
+                    output("########################################################################")
+                    return False
             except Exception:
                 output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
                 return False
-                ##send(('terminate_shuttle', to = self.replicaList[index])
         return True
 
-    def validate_order_proof(order_proof) :
+    def validate_order_proof(action, order_proof) :
         for i in range(len(order_proof)) :
-            verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
+            verify_key = nacl.signing.VerifyKey(self.public_keys[i], encoder=nacl.encoding.HexEncoder)
             try:
-                verify_key.verify(order_proof[i])
-            except Exception:
+                unsigned_order_statement = pickle.loads(verify_key.verify(order_proof[i]))
+                unsigned_operation = unsigned_order_statement.action.operation
+                client_operation = action.operation
+                output("###############", client_operation, "####################")
+                if not unsigned_operation.isEqual(client_operation):
+                    output("Replica",self.index,":>> Result doenot match so returning false")
+                    return False
+            except KeyError:
                 output("Replica",self.index,":>> Key doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
                 return False
         return True
