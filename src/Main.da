@@ -202,13 +202,8 @@ class Replica(process):
             order_statement.order = "order"
 
             if client_index in self.forwarded_request and self.is_failure_change_operation("forwarded_request", str(client_index), str(self.forwarded_request[client_index])):
-                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
-                temp_action = copy.deepcopy(action)
-                temp_action.operation.type = 2
-                temp_action.operation.command = "('X')"
-                order_statement.action = temp_action
-                output("Replica",self.index,":>> Successfully changed the operation to get('X')")
-                result = performOperation(temp_action.operation)
+                order_statement = self.change_operation(action, order_statment)
+                result = performOperation(order_statment.action)
 
             elif client_index in self.forwarded_request and self.is_failure_change_result("forwarded_request", str(client_index), str(self.forwarded_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
@@ -290,12 +285,8 @@ class Replica(process):
 
             ##fault injection scenario
             if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
-                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
-                temp_action = copy.deepcopy(action)
-                temp_action.operation.type = 2
-                temp_action.operation.command = "('X')"
-                order_statement.action = temp_action
-                result = performOperation(temp_action.operation)
+                order_statement = self.change_operation(action, order_statment)
+                result = performOperation(order_statment.action)
             elif client_index in self.shuttle_request and self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -350,12 +341,8 @@ class Replica(process):
 
 
             if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
-                temp_action = copy.deepcopy(action)
-                temp_action.operation.type = 2
-                temp_action.operation.command = "('X')"
-                order_statement.action = temp_action
-                result = performOperation(temp_action.operation)
+                order_statement = self.change_operation(action, order_statment)
+                result = performOperation(order_statment.action)
             elif client_index in self.shuttle_request and  self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -402,13 +389,13 @@ class Replica(process):
             result_shuttle.result_proof = result_proof
             self.history[action] = (result_shuttle, result)
             output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
-            send(('result_shuttle', self, result_shuttle, result), to = self.replicaList[index - 1])
+            send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
 
 
     ## [TODO] take result as a parameter too
     ## [TODO] validate the result shuttle
     # on receiving result shuttle replica will store result shuttle into its cache and start awaiting for forward shuttle
-    def receive(msg = ('result_shuttle', replica, result_shuttle, result)):
+    def receive(msg = ('result_shuttle', replica, result_shuttle, result, client_index)):
 
         flag_not_verified = False
 
@@ -436,24 +423,87 @@ class Replica(process):
                     wait_operation[1] = None
                     self.waiting_for_result[action.operation.client_request_id] = wait_operation
 
-            output("Replica",self.index,":>> Got a result shuttle and its verified", self.history[action])
             output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.toString())
+
+            ## fault injection case
+            result = None
+            try:
+                self.result_shuttle_request[client_index] += 1
+            except KeyError:
+                self.result_shuttle_request[client_index] = 1
+
+            ## fault injection scenario
+            if client_index in self.shuttle_request and self.is_failure_change_result("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.result_shuttle_request[client_index])
+                temp_result = "OK"
+
+                ## calculate the result digest
+                import nacl
+                HASHER = nacl.hash.sha256
+                result_byte = pickle.dumps(temp_result)
+                result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+                ## unsign the result statement and overwrite the new result
+                result_statement = result_shuttle.result_proof[self.index]
+                unsigned_result_statement = pickle.loads(self.public_keys[self.index].verify(result_statement))
+                unsigned_result_statement.result = result_digest
+
+                ## resign the result_statement and replace it in result_proof
+                signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
+                result_shuttle.result_proof[self.index] = signed_result_statement
+
+            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.result_shuttle_request[client_index])
+                del result_shuttle.result_proof[0]
 
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
-                send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
+                send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
         if self.state == 'ACTIVE':
             output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.toString())
             (found_in_history, action) = foundInHistory(operation)
+
             if found_in_history == True:
-                 try:
+                try:
                     (result_shuttle, result) = self.history[action]
                     send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
-                 except Exception:
+                except Exception:
                     output(self.index, 'Error')
+
+                result = None
+                try:
+                    self.direct_client_request[client_index] += 1
+                except KeyError:
+                    self.direct_client_request[client_index] = 1
+
+                ##fault injection scenario
+                if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.direct_client_request[client_index])
+                    temp_result = "OK"
+
+                    ## calculate the result digest
+                    import nacl
+                    HASHER = nacl.hash.sha256
+                    result_byte = pickle.dumps(temp_result)
+                    result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+                    ## unsign the result statement and overwrite the new result
+                    result_statement = result_shuttle.result_proof[self.index]
+                    unsigned_result_statement = pickle.loads(self.public_keys[self.index].verify(result_statement))
+                    unsigned_result_statement.result = result_digest
+
+                    ## resign the result_statement and replace it in result_proof
+                    signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
+                    result_shuttle.result_proof[self.index] = signed_result_statement
+
+
+                elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.direct_client_request[client_index])
+                    del result_shuttle.result_proof[0]
+
             elif found_in_history == False and not self.type == 'head':
                 output("Replica",self.index,": Forward Retransmit to Head.")
                 send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
@@ -496,7 +546,7 @@ class Replica(process):
             return False
 
     def is_failure_change_result(type, client, message):
-
+        output("############ change result ##################", fault_map, type, client, message)
         try:
             (source, (c,m)) = fault_map["change_result()"]
             if (type, (client, message)) == (source, (c,m)):
@@ -505,13 +555,21 @@ class Replica(process):
             return False
 
     def is_failure_drop_result_stmt(type, client, message):
-        output("############ drop result ##################", fault_map, type, client, message)
+
         try:
             (source, (c,m)) = fault_map["drop_result_stmt()"]
             if (type, (client, message)) == (source, (c,m)):
                 return True
         except KeyError:
             return False
+
+    def change_operation(action, order_statement) :
+        output("Replica",self.index,":>> !!!!!! Changing operation from ", action.operation.command , " to get('X') !!!!!!!")
+        temp_action = copy.deepcopy(action)
+        temp_action.operation.type = 2
+        temp_action.operation.command = "('X')"
+        order_statement.action = temp_action
+        return order_statement
 
 
 
