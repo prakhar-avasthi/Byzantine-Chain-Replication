@@ -4,8 +4,9 @@
 ## PLATFORM. 
 1. DistAlgo version: 1.0.9
 2. Python version: 3.5.2
-3. OS: Ubuntu
-4. Hosts: Laptop
+3. PyNacl: 1.1.2
+4. OS: Ubuntu
+5. Hosts: Laptop
 
 
 ## INSTRUCTIONS.
@@ -26,7 +27,14 @@
 4. 	command_list.add(command[value%4])
 
 
-## BUGS AND LIMITATIONS.  a list of all known bugs in and limitations of your code.
+## BUGS AND LIMITATIONS.  
+   **Limitations:**
+   - There can only be 1 PseudoRandom client.
+   - Two Clients can't have same keys.
+   - Buffer size should be 50000 bytes.
+   
+   **Bugs: **
+   
 
 ## CONTRIBUTIONS.
 1. Prakhar Avasthi (@github/prakhar-avasthi)
@@ -55,13 +63,35 @@
      - Implemented Fault injection triggers and failures.
 
 
-#MAIN FILES.
-1. src\Main.da 		*(Contains: 1. Olympus code., 2. Creation of ClientNode and OlympusNode*
-2. src\Client.da	*(Contains: 1. Client code.)*
-3. src\Replica.da	*(Contains: 1. Replica code.)*
+## MAIN FILES.
+1. src\Main.da
+   - Olympus Code
+   - Replica Code
+   - Creation of ClientNode (Clients will run on this node)
+   - Creation of OlympusNode (Olympus and Replicas will run on this node)
 
-CODE SIZE.  (1a) report the numbers of non-blank non-comment lines of code (LOC) in your system in the following categories: algorithm, other, and total.  "algorithm" is for the algorithm itself and other functionality interleaved with it (fault injection, logging, debugging, etc.).  "other" is for everything that can easily be separated from the algorithm, e.g., configuration and testing.  (1b) report how you obtained the counts (I use CLOC https://github.com/AlDanial/cloc).  (2) give a rough estimate of how much of the "algorithm" code is for the algorithm itself, and how much is for other functionality interleaved with it.
+2. src\Client.da
+   - Client Code
 
-LANGUAGE FEATURE USAGE. report the numbers of list comprehensions, dictionary comprehensions, set comprehensions, aggregations, and quantifications in your code.  the first two are Python features; the others are DistAlgo features.
 
-OTHER COMMENTS.  anything else you want us to know.
+## CODE SIZE.
+   1. ** Lines of Code(LOC) ** 
+   CLOC is used to obtain the LOC.
+      - Algorithm 
+      - Other
+      - Total
+   
+   2. ** Estimates **
+      - give a rough estimate of how much of the "algorithm" code is for the algorithm itself
+      - how much is for other functionality interleaved with it.
+
+
+## LANGUAGE FEATURE USAGE. 
+- numbers of list comprehensions
+- numbers of dictionary comprehensions
+- numbers of set comprehensions
+- numbers of aggregations
+- numbers of quantifications
+
+
+## OTHER COMMENTS
