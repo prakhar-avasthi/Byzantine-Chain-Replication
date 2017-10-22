@@ -79,7 +79,7 @@ class Client(process):
         output("Client",index,":>> Sending operation to Head Node: ", operation.command)
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
-        if(await(some(received(('res_operation', operation, result, result_proof))))): pass
+        if(await(command_and_state[1] == 102)): pass
         elif timeout(timeout):
             self.timeout_reply = 0
             self.error_in_replica = 0
