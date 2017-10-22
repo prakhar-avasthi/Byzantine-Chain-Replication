@@ -377,7 +377,7 @@ class Replica(process):
             result_proof.append(signed_result_statement)
 
             ## send result to client
-            send(('res_operation', action.operation, result, result_proof), to=client)
+            ##send(('res_operation', action.operation, result, result_proof), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
@@ -459,7 +459,7 @@ class Replica(process):
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
-                send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
+                ##send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
         if self.state == 'ACTIVE':
