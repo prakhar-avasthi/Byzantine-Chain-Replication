@@ -96,6 +96,7 @@ class Olympus(process):
 class Replica(process):
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
         self.forwarded_request = {}
+        self.current_slot_id = {}
         self.shuttle_request = {}
         self.direct_client_request = {}
         self.result_shuttle_request = {}
@@ -160,13 +161,13 @@ class Replica(process):
 
             result = None
             try:
-                self.forwarded_request[client_index] += 1
+                self.current_slot_id[client_index] += 1
             except KeyError:
-                self.forwarded_request[client_index] = 1
+                self.current_slot_id[client_index] = 1
 
             class_action = import_da('Action')
             action = class_action.Action()
-            action.seq_id = self.forwarded_request[client_index]
+            action.seq_id = self.current_slot_id[client_index]
             action.operation = operation
             order_proof = []
             result_proof = []
@@ -564,16 +565,17 @@ class Replica(process):
         return True
 
 def main():
+    test_case = sys.argv[1]
     config = {}
     failure_list = []
-    with open('config.txt','r') as f:
-      for line in f:
-          if line[0] != '#':
-            (key,sep,val) = line.partition('=')
-            # if the line does not contain '=', it is invalid and hence ignored
-            if len(sep) != 0:
-                val = val.strip()
-                config[key.strip()] = int(val) if str.isdecimal(val) else val
+    with open(test_case,'r') as f:
+        for line in f:
+            if line[0] != '#':
+                (key,sep,val) = line.partition('=')
+                # if the line does not contain '=', it is invalid and hence ignored
+                if len(sep) != 0:
+                    val = val.strip()
+                    config[key.strip()] = int(val) if str.isdecimal(val) else val
 
     #class_olympus = import_da('Olympus')
     class_client = import_da('Client')
