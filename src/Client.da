@@ -94,7 +94,7 @@ class Client(process):
                 if val[1] == 101:
                     resend_operation = makeOperation(key, val[0])
                     for replica in self.config.list_replica:
-                        send(('req_operation_timeout', resend_operation, self, self.index), to=replica)
+                        send(('req_operation_timeout', resend_operation, "client", self, self.index), to=replica)
                     if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0): pass
                     elif timeout(timeout):
                         output("Client",index,":>> Not received from Quoram, Terminate System.")
