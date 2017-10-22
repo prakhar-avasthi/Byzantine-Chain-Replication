@@ -99,7 +99,7 @@ class Client(process):
         command = command.strip()
         class_operation = import_da('Operation')
         operation = class_operation.Operation()
-        operation.client_seq_id = seq_id
+        operation.client_seq_id = seq_id+1
         operation.client_request_id = index         #sending its index to identify client
         if 'put' in command:
             operation.type = 1
@@ -148,11 +148,11 @@ class Client(process):
 
         if not discard_flag:
             output("Client",index,":>> Result of operation ", operation.command ," is ", result)
-            val = self.command_state[operation.client_seq_id]
+            val = self.command_state[operation.client_seq_id-1]
             val[1] = 102       ## State 102 -> completed
-            self.command_state[operation.client_seq_id] = [val[0], val[1]]
+            self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
             if operation.client_seq_id+1 < len(self.commands):
-                sendOperation(operation.client_seq_id+1)
+                sendOperation(operation.client_seq_id)
             else:
                 checkIfWeHaveExpectedContent()
             discard_flag = False
