@@ -71,6 +71,7 @@ class Olympus(process):
             failure_replica = matches[0].split(",")[1]
 
             failures_injected = failure[1].split(";")
+
             for failure_type in failures_injected:
                 failure_row = re.findall(r'(?:[^,(]|\([^)]*\))+', failure_type)
                 matches = re.findall(r"\((.+?)\)", failure_row[0])
@@ -78,11 +79,11 @@ class Olympus(process):
                 source = failure_row[0].split("(")[0]
                 failure_type = failure_row[1]
 
-            try:
-                self.replica_failure_map[str(failure_replica)][str(failure_type).strip()] = (source,(client_id, message_number))
-            except KeyError:
-                self.replica_failure_map[str(failure_replica)] = {str(failure_type).strip(): (source,(client_id, message_number))}
-
+                try:
+                    self.replica_failure_map[str(failure_replica)][str(failure_type).strip()] = (source.strip(),(client_id, message_number))
+                except KeyError:
+                    self.replica_failure_map[str(failure_replica).strip()] = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
+            output("#######################", replica_failure_map, "######################")
 
 class Replica(process):
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
@@ -337,6 +338,7 @@ class Replica(process):
             ## if not valid, enter into IMMUTABLE state
             ## else add it into its history and send to previous replica
             if not is_valid:
+                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
                 self.state = 'IMMUTABLE'
                 send(('wedged', self, self.index, self.database), to = olympus)
             else:
