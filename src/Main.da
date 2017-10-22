@@ -140,6 +140,7 @@ class Replica(process):
         self.shuttle_request = {}
         self.direct_client_request = {}
         self.result_shuttle_request = {}
+        self.waiting_for_result = {}
 
 
     def run():
@@ -206,7 +207,7 @@ class Replica(process):
 
             class_action = import_da('Action')
             action = class_action.Action()
-            action.seq_id = 1
+            action.seq_id = self.forwarded_request[client_index]
             action.operation = operation
             order_proof = []
             result_proof = []
@@ -259,9 +260,6 @@ class Replica(process):
             forward_shuttle.result_proof = result_proof
             output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
-            if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
-            elif timeout(timeout):
-                output("Replica",self.index,":>> Replica timedout")
 
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
@@ -345,9 +343,7 @@ class Replica(process):
             ## send the shuttle to next replica
             output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
-            if(await(some(received(('result_shuttle', replica, result_shuttle))))): pass
-            elif timeout(timeout):
-                output("Replica",self.index,":>> Replica timedout")
+
 
         ## If replica is a tail node, it will create a result shuttle
         if type == 'tail' and state == 'ACTIVE':
@@ -409,9 +405,6 @@ class Replica(process):
             output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
             send(('result_shuttle', self, result_shuttle, result), to = self.replicaList[index - 1])
 
-            if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
-            elif timeout(timeout):
-                output("Replica",self.index,":>> Replica timed out")
 
     ## [TODO] take result as a parameter too
     ## [TODO] validate the result shuttle
@@ -435,6 +428,15 @@ class Replica(process):
         if not flag_not_verified  and state == 'ACTIVE':
             action = result_shuttle.action
             self.history[action] = (result_shuttle, result)
+
+            if action.operation.client_request_id in self.waiting_for_result:
+                wait_operation = self.waiting_for_result[action.operation.client_request_id]
+                if wait_operation[0] == 1 and\
+                    wait_operation[1] == action.operation.client_seq_id:
+                    wait_operation[0] = 0
+                    wait_operation[1] = None
+                    self.waiting_for_result[action.operation.client_request_id] = wait_operation
+
             output("Replica",self.index,":>> Got a result shuttle and its verified", self.history[action])
             output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.command)
 
@@ -442,32 +444,48 @@ class Replica(process):
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
                 send(('result_shuttle', self, result_shuttle, result), to = replicaList[index - 1])
-                if( await(some(received(('forward_shuttle', replica, forward_shuttle, client, client_index))))):pass
-                elif timeout(timeout):
-                    output("Replica",self.index,":>> Replica timed out")
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
         if self.state == 'ACTIVE':
-             output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
-             found = False
-             for action in self.history.keys():
-                 if action.operation.client_request_id == operation.client_request_id:
-                     if action.operation.command == operation.command:
-                         if action.operation.type == operation.type:
-
-                             try:
-                                (result_shuttle, result) = self.history[action]
-                                output("Replica",self.index,":####################", result_shuttle.result_proof)
-
-                                send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
-                             except Exception:
-                                output(self.index, 'Error')
-                             found = True
-                             break
-             if found == False and not self.type == 'head':
-                 send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
+            output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
+            (found_in_history, action) = foundInHistory(operation)
+            if found_in_history == True:
+                 try:
+                    (result_shuttle, result) = self.history[action]
+                    send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
+                 except Exception:
+                    output(self.index, 'Error')
+            elif found_in_history == False and not self.type == 'head':
+                output("Replica",self.index,": Forward Retransmit to Head.")
+                send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
+                self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
+                if await(self.waiting_for_result[operation.client_request_id][0] == 0):
+                    output("Replica",self.index,":Got result!, Stop Timer!")
+                elif timeout(self.timeout):
+                    output("Replica",self.index,":Timeout!! Sending Reconfig Request")
+                    self.waiting_for_result[operation.client_request_id] = (0, None)
+            elif found_in_history == False and self.type == 'head':
+                if operation.client_seq_id > self.forwarded_request[client_index]:
+                    #treat as new request
+                    send(('req_operation', operation, client, client.index), to=self)
+                else:
+                    self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
+                    if await(self.waiting_for_result[operation.client_request_id][0]== 0):
+                        output("Replica",self.index,":Got result!, Timer expire!")
+                    elif timeout(self.timeout):
+                        output("Replica",self.index,":Timeout!! Sending Reconfig Request")
+                        self.waiting_for_result[operation.client_request_id] = (0, None)
         elif self.state == 'IMMUTABLE':
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
+
+    def foundInHistory(operation):
+        for action in self.history.keys():
+            if action.operation.client_request_id == operation.client_request_id and\
+                action.operation.command == operation.command and\
+                action.operation.client_seq_id == operation.client_seq_id and\
+                action.operation.type == operation.type:
+                    return (True, action)
+        return (False, None)
 
     def is_failure_change_operation(type, client, message):
         try:
