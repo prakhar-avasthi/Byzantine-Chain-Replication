@@ -95,3 +95,9 @@
 
 
 ## OTHER COMMENTS
+- Command to be run on Client Node
+  - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode Main.da 
+- Command to be run on Olympus Node
+  - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D Main.da
+- If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
+- If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
