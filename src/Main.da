@@ -3,6 +3,7 @@ import nacl.encoding
 import nacl.signing
 import nacl.hash
 import sys
+import copy
 
 class Olympus(process):
     def setup(num_replica, head_timeout, nonhead_timeout, failure_list):
@@ -51,21 +52,13 @@ class Olympus(process):
 
         i = 0
         for replica in replicaList:
+            failure_map = replica_failure_map[str(i)] if str(i) in self.replica_failure_map else {}
             if i is 0:
-                if(str(i) in self.replica_failure_map):
-                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]))
-                else:
-                    setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
             elif i is num_replica-1:
-                if(str(i) in self.replica_failure_map):
-                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
-                else:
-                    setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             else:
-                if(str(i) in self.replica_failure_map):
-                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]))
-                else:
-                    setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             i += 1
 
         self.config.list_replica = list(replicaList)
@@ -102,7 +95,6 @@ class Olympus(process):
         output("Parsing failures")
         for failure in self.failure_list:
             import re
-            output("###########In Loop##########")
             failure_replica = None
             failure_type = None
             source = None
@@ -120,22 +112,15 @@ class Olympus(process):
                 source = failure_row[0].split("(")[0]
                 failure_type = failure_row[1]
 
-            output("########### Failures are #########", failure_replica, failure_type, source, client_id, message_number)
-            output("########### Map is ##############", self.replica_failure_map)
-            ##if not failure_replica in self.replica_failure_map:
-                ##self.replica_failure_map[failure_replica] = {}
             try:
-                self.replica_failure_map[str(failure_replica)][str(failure_type)] = (source,(client_id, message_number))
+                self.replica_failure_map[str(failure_replica)][str(failure_type).strip()] = (source,(client_id, message_number))
             except KeyError:
-                output("############### Key Error ############",)
-                self.replica_failure_map[str(failure_replica)] = {str(failure_type): (source,(client_id, message_number))}
-        output("###########", self.replica_failure_map)
+                self.replica_failure_map[str(failure_replica)] = {str(failure_type).strip(): (source,(client_id, message_number))}
 
 
 class Replica(process):
     ##[TODO: take more parameters for the code to run successfully]
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
-        output("################# Fault map is #############", self.fault_map)
         self.forwarded_request = {}
         self.shuttle_request = {}
         self.direct_client_request = {}
@@ -216,15 +201,22 @@ class Replica(process):
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
 
-            if self.is_failure_change_operation("forwarded_request", client_index, self.forwarded_request[client_index]):
-                temp_action = deepcopy(action)
-                temp_action.operation.command = "get('X')"
+            if client_index in self.forwarded_request and self.is_failure_change_operation("forwarded_request", str(client_index), str(self.forwarded_request[client_index])):
+                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                temp_action = copy.deepcopy(action)
+                temp_action.operation.type = 2
+                temp_action.operation.command = "('X')"
                 order_statement.action = temp_action
+                output("Replica",self.index,":>> Successfully changed the operation to get('X')")
                 result = performOperation(temp_action.operation)
-            elif self.is_failure_change_result("forwarded_request", client_index, self.forwarded_request[client_index]):
+
+            elif client_index in self.forwarded_request and self.is_failure_change_result("forwarded_request", str(client_index), str(self.forwarded_request[client_index])):
+                output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
                 order_statement.action = action
                 result = "OK"
+                output("Replica",self.index,":>> Successfully changed the result to OK")
             else:
+                output("Replica",self.index,":>> No fault Injected ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
 
@@ -297,24 +289,26 @@ class Replica(process):
             order_statement.order = "order"
 
             ##fault injection scenario
-            try:
-                if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",client_index, self.shuttle_request[client_index]):
-                    temp_action = deepcopy(action)
-                    temp_action.operation.command = "get('X')"
-                    order_statement.action = temp_action
-                    result = performOperation(temp_action.operation)
-                elif client_index in self.shuttle_request  and self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
-                    order_statement.action = action
-                    result = "OK"
-                elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
-                    order_statement.action = action
-                    result = performOperation(action.operation)
-                    result_proof.remove(0)
-                else:
-                    order_statement.action = action
-                    result = performOperation(action.operation)
-            except Exception:
-                output("####### CULPRIT ######")
+            if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                temp_action = copy.deepcopy(action)
+                temp_action.operation.command = "get('X')"
+                order_statement.action = temp_action
+                result = performOperation(temp_action.operation)
+            elif client_index in self.shuttle_request and self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                order_statement.action = action
+                result = "OK"
+            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                order_statement.action = action
+                result = performOperation(action.operation)
+                result_proof.remove(0)
+            else:
+                output("Replica",self.index,":>> No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
+                order_statement.action = action
+                result = performOperation(action.operation)
+
 
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             order_proof.append(signed_order_statement)
@@ -353,24 +347,27 @@ class Replica(process):
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
 
-            try:
-                if self.is_failure_change_operation("shuttle", client_index, self.shuttle_request[client_index]):
-                    temp_action = deepcopy(action)
-                    temp_action.operation.command = "get('X')"
-                    order_statement.action = temp_action
-                    result = performOperation(temp_action.operation)
-                elif self.is_failure_change_result("shuttle", client_index, self.shuttle_request[client_index]):
-                    order_statement.action = action
-                    result = "OK"
-                elif self.is_failure_drop_result_stmt("shuttle", client_index, self.shuttle_request[client_index]):
-                    order_statement.action = action
-                    result = performOperation(action.operation)
-                    result_proof.remove(0)
-                else:
-                    order_statement.action = action
-                    result = performOperation(action.operation)
-            except Exception:
-                output("######### CULRPIT ######## ", client_index)
+
+            if client_index in self.shuttle_request and self.is_failure_change_operation("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Change operation injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                temp_action = copy.deepcopy(action)
+                temp_action.operation.command = "get('X')"
+                order_statement.action = temp_action
+                result = performOperation(temp_action.operation)
+            elif client_index in self.shuttle_request and  self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                order_statement.action = action
+                result = "OK"
+            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.forwarded_request[client_index])
+                order_statement.action = action
+                result = performOperation(action.operation)
+                result_proof.remove(0)
+            else:
+                output("Replica",self.index,":>> No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
+                order_statement.action = action
+                result = performOperation(action.operation)
+
             order_statement.action = action
             order_proof.append(order_statement)
 
@@ -497,7 +494,7 @@ class Replica(process):
 
     def is_failure_change_result(type, client, message):
         try:
-            (source, (c,m)) = fault_map[ "change_result()"]
+            (source, (c,m)) = fault_map["change_result()"]
             if (type, (client, message)) == (source, (c,m)):
                 return True
         except KeyError:
