@@ -64,26 +64,26 @@
 
 
 ## MAIN FILES.
-1. src\Main.da
+1. **src\Main.da**
    - Olympus Code
    - Replica Code
    - Creation of ClientNode (Clients will run on this node)
    - Creation of OlympusNode (Olympus and Replicas will run on this node)
 
-2. src\Client.da
+2. **src\Client.da**
    - Client Code
 
 
 ## CODE SIZE.
    - **Lines of Code(LOC)** 
-    CLOC is used to obtain the LOC.
-     - Algorithm 
-     - Other
-     - Total
+    SLOC is used to obtain the LOC.
+     - Algorithm:  
+     - Other: 
+     - Total: 1049 Loc
    
    - **Estimates**
-     - give a rough estimate of how much of the "algorithm" code is for the algorithm itself
-     - how much is for other functionality interleaved with it.
+     - Algorithm - 
+     - Other functionality interleaved - 
 
 
 ## LANGUAGE FEATURE USAGE. 
@@ -96,8 +96,8 @@
 
 ## OTHER COMMENTS
 - Command to be run on Client Node
-  - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode Main.da 
+  - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt 
 - Command to be run on Olympus Node
-  - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D Main.da
+  - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt
 - If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
