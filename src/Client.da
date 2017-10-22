@@ -16,6 +16,7 @@ class Client(process):
         self.replica_public_keys = []
         self.result_sequence = []
         self.database = {}
+        self.received_result = False
 
         if not 'random' in workload:
             self.commands = workload.split(';')
@@ -81,7 +82,10 @@ class Client(process):
         output("Client",index,":>> Sending operation to Head Node: ", operation.toString())
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
-        if(await(command_and_state[1] == 102)): pass
+        self.received_result = False
+        if await(self.received_result == True): #if(await(command_and_state[1] == 102)):
+            self.received_result = False
+            output("Client",index,":>> received result, kill timer: ", operation.toString())
         elif timeout(timeout):
             self.timeout_reply = 0
             self.error_in_replica = 0
@@ -121,38 +125,20 @@ class Client(process):
     def receive (msg= ('res_operation', operation, result, result_proof)):
 
         discard_flag = False
-        ## take a copy of result it got
-        copy_result = result
-
-        ## calculate the result hash from the result it get
 
         ## calculate the result digest
-        HASHER = nacl.hash.sha256
-        result_byte = pickle.dumps(result)
-        result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-        unsigned_result_statement = None
+        result_digest = calculate_result_digest(result)
 
         ## check this digest with all the results in the result_proof so that client believe the value is correct
-        i = 0
-        for result_statement in result_proof:
-            try:
-                unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
-            except:
-                output("Client",self.index,":>> Key doesnot verify so terminating the Client")
-                ##send(('terminate_shuttle', to = self.replicaList[index])
+        is_verified = verify(result_digest, result_proof)
 
-            output("Client",index,":>> Checking the cryptohash")
-            i += 1
-            if not unsigned_result_statement is None and unsigned_result_statement.result != result_digest:
-                output("Client",index,":>> Result is not verified hence reconfiguration")
-                discard_flag = True
-                break
-
-        if not discard_flag:
+        ## [TODO] handle the else case
+        if is_verified:
             output("Client",index,":>> Result of operation ", operation.toString() ," is ", result)
             self.result_sequence.append(result)
             val = self.command_state[operation.client_seq_id-1]
             val[1] = 102       ## State 102 -> completed
+            self.received_result = True
             self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
             if operation.client_seq_id+1 <= len(self.commands):
                 sendOperation(operation.client_seq_id)
@@ -166,7 +152,18 @@ class Client(process):
             output("Client",index,":>> Got Result after timeout of operation ", operation.toString() ," is ", result)
             self.timeout_reply += 1
             if self.timeout_reply > len(self.config.list_replica)/2:
-                output("Client",index,":>> Got from Quoram")
+
+                ## calculate the result digest
+                result_digest = calculate_result_digest(result)
+
+                ## check this digest with all the results in the result_proof so that client believe the value is correct
+                is_verified = verify(result_digest, result_proof)
+
+                ## [TODO] Reverify the else result
+                if is_verified:
+                    output("Client",index,":>> Got from Quoram")
+                else:
+                    output("Client",index,":>> Result is not verified hence reconfiguration")
         else:
             output("Client",self.index,":>> Replica: ", replica_index, " is Immutable, Requesting Olympus for new Config.")
             self.error_in_replica += 1
@@ -229,3 +226,28 @@ class Client(process):
                 return 'OK'
             else:
                 return 'FAIL'
+
+    def calculate_result_digest(result):
+        HASHER = nacl.hash.sha256
+        result_byte = pickle.dumps(result)
+        result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+        return result_digest
+
+    def verify(result_digest, result_proof):
+        output("result digest is", result_digest)
+        unsigned_result_statement = None
+        i = 0
+        for result_statement in result_proof:
+            try:
+                unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
+            except:
+                output("Client",self.index,":>> Key doesnot verify so terminating the Client")
+                ##send(('terminate_shuttle', to = self.replicaList[index])
+
+            output("Client",index,":>> Checking the cryptohash")
+            i += 1
+            if not unsigned_result_statement is None and unsigned_result_statement.result != result_digest:
+                output("Client",index,":>> Result is not verified hence reconfiguration")
+                return False;
+                break
+        return True
