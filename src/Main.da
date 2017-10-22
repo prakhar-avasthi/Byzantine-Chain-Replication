@@ -549,7 +549,6 @@ class Replica(process):
             try:
                 unsigned_result_statement = pickle.loads(verify_key.verify(result_proof[i]))
                 if(unsigned_result_statement.result != result):
-                    output("########################################################################")
                     return False
             except Exception:
                 output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
@@ -563,7 +562,6 @@ class Replica(process):
                 unsigned_order_statement = pickle.loads(verify_key.verify(order_proof[i]))
                 unsigned_operation = unsigned_order_statement.action.operation
                 client_operation = action.operation
-                output("###############", client_operation, "####################")
                 if not unsigned_operation.isEqual(client_operation):
                     output("Replica",self.index,":>> Result doenot match so returning false")
                     return False
