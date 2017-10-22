@@ -141,7 +141,7 @@ class Client(process):
 
             output("Client",index,":>> Checking the cryptohash")
             i += 1
-            if unsigned_result_statement.result != result_digest:
+            if not unsigned_result_statement is None and unsigned_result_statement.result != result_digest:
                 output("Client",index,":>> Result is not verified hence reconfiguration")
                 discard_flag = True
                 break
