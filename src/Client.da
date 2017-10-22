@@ -63,8 +63,9 @@ class Client(process):
             await(some(received(('res_get_current_configuration', config, replica_public_keys))))
 
         if not self.commands is None:
-            sendOperation(0)
-
+            for i in range(len(self.commands)):
+                sendOperation(i)
+            resultValidation()
         -- l
         await(some(received(('terminate_client'))))
 
@@ -83,7 +84,7 @@ class Client(process):
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         self.wait_for_result = 1
-        if(await(self.wait_for_result < 1)):pass
+        if(await(self.wait_for_result < 1)): pass
         elif timeout(timeout):
             self.timeout_reply = 0
             self.error_in_replica = 0
@@ -138,10 +139,6 @@ class Client(process):
             val[1] = 102       ## State 102 -> completed
             self.wait_for_result = 0
             self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
-            if operation.client_seq_id+1 <= len(self.commands):
-                sendOperation(operation.client_seq_id)
-            else:
-                resultValidation()
             discard_flag = False
 
 
