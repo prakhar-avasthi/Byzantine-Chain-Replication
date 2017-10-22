@@ -28,12 +28,12 @@
 
 
 ## BUGS AND LIMITATIONS.  
-   **Limitations:**
-   - There can only be 1 PseudoRandom client.
-   - Two Clients can't have same keys.
-   - Buffer size should be 50000 bytes.
+   - **Limitations:**
+     - There can only be 1 PseudoRandom client.
+     - Two Clients can't have same keys.
+     - Buffer size should be 50000 bytes.
    
-   **Bugs: **
+   - **Bugs:**
    
 
 ## CONTRIBUTIONS.
@@ -75,15 +75,15 @@
 
 
 ## CODE SIZE.
-   1. ** Lines of Code(LOC) ** 
-   CLOC is used to obtain the LOC.
-      - Algorithm 
-      - Other
-      - Total
+   - **Lines of Code(LOC)** 
+    CLOC is used to obtain the LOC.
+     - Algorithm 
+     - Other
+     - Total
    
-   2. ** Estimates **
-      - give a rough estimate of how much of the "algorithm" code is for the algorithm itself
-      - how much is for other functionality interleaved with it.
+   - **Estimates**
+     - give a rough estimate of how much of the "algorithm" code is for the algorithm itself
+     - how much is for other functionality interleaved with it.
 
 
 ## LANGUAGE FEATURE USAGE. 
