@@ -39,6 +39,7 @@
      - Implemented sending cached result, error, forward request by replica on retransmit.
      - Implemented PseudoRandom Workload generation Algorithm.
      - Implemented Retransmitted request sequence at Head Node.
+     - Implemented dictionary validation after end of test case.
      - Ran the program on multiple hosts.
 
 2. Rajat Jain (@github/jainraj91)

@@ -135,7 +135,7 @@ class Replica(process):
 
 
     def performOperation(operation):
-        output("Replica",self.index,":>> perform operation: ", operation.command)
+        output("Replica",self.index,":>> perform operation: ", operation.toString())
         import re
         matches = re.findall(r"\'(.+?)\'", operation.command)
 
@@ -182,7 +182,7 @@ class Replica(process):
     def receive(msg = ('req_operation', operation, client, client_index)):
         ## If the replica is head node, it will create a forward shuttle
         if self.type == 'head' and state == 'ACTIVE':
-            output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.command)
+            output("Replica",self.index,":>> Received req_operation from Client", client_index, " operation: ", operation.toString())
 
             result = None
             try:
@@ -245,13 +245,13 @@ class Replica(process):
             forward_shuttle.action = action
             forward_shuttle.order_proof = order_proof
             forward_shuttle.result_proof = result_proof
-            output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.command)
+            output("Replica",self.index,":>> Forwarding shuttle to Replica",index+1, " operation: ", action.operation.toString())
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
 
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         action = forward_shuttle.action
-        output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.command)
+        output("Replica",self.index,":>> Received forward_shuttle from previous replica, operation: ", action.operation.toString())
 
         result = None
         try:
@@ -327,7 +327,7 @@ class Replica(process):
             ## output("Replica order proof size",self.index,":>>", len(order_proof))
 
             ## send the shuttle to next replica
-            output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.command)
+            output("Replica",self.index,":>> Forwarding shuttle to Replica: ", index+1, " operation: ", action.operation.toString())
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
 
 
@@ -377,8 +377,8 @@ class Replica(process):
             result_proof.append(signed_result_statement)
 
             ## send result to client
-            ##send(('res_operation', action.operation, result, result_proof), to=client)
-            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
+            send(('res_operation', action.operation, result, result_proof), to=client)
+            output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.toString(), " result: ", result)
 
             ## make a new result shuttle
             class_shuttle = import_da('Shuttle')
@@ -388,7 +388,7 @@ class Replica(process):
             ##result_shuttle.order_proof = order_proof
             result_shuttle.result_proof = result_proof
             self.history[action] = (result_shuttle, result)
-            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
+            output("[Replica",self.index,":>>] Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
             send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
 
 
@@ -423,7 +423,7 @@ class Replica(process):
                     wait_operation[1] = None
                     self.waiting_for_result[action.operation.client_request_id] = wait_operation
 
-            output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.command)
+            output("Replica",self.index,":>> Received result_shuttle from previous replica: ", action.operation.toString())
 
             ## fault injection case
             result = None
@@ -458,12 +458,12 @@ class Replica(process):
 
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
-                output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.command)
-                ##send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
+                output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
+                send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
         if self.state == 'ACTIVE':
-            output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
+            output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.toString())
             (found_in_history, action) = foundInHistory(operation)
 
             if found_in_history == True:

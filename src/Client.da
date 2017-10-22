@@ -14,6 +14,8 @@ class Client(process):
         self.error_in_replica = 0
         self.command_state = {}
         self.replica_public_keys = []
+        self.result_sequence = []
+        self.database = {}
 
         if not 'random' in workload:
             self.commands = workload.split(';')
@@ -76,7 +78,7 @@ class Client(process):
         operation = makeOperation(key, command_and_state[0])
         command_and_state[1] = 101          ## State 101 -> in progress
         #Sending operation to HeadNode
-        output("Client",index,":>> Sending operation to Head Node: ", operation.command)
+        output("Client",index,":>> Sending operation to Head Node: ", operation.toString())
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         if(await(command_and_state[1] == 102)): pass
@@ -147,20 +149,21 @@ class Client(process):
                 break
 
         if not discard_flag:
-            output("Client",index,":>> Result of operation ", operation.command ," is ", result)
+            output("Client",index,":>> Result of operation ", operation.toString() ," is ", result)
+            self.result_sequence.append(result)
             val = self.command_state[operation.client_seq_id-1]
             val[1] = 102       ## State 102 -> completed
             self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
-            if operation.client_seq_id+1 < len(self.commands):
+            if operation.client_seq_id+1 <= len(self.commands):
                 sendOperation(operation.client_seq_id)
             else:
-                checkIfWeHaveExpectedContent()
+                resultValidation()
             discard_flag = False
 
 
     def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
         if error is None:
-            output("Client",index,":>> Got Result after timeout of operation ", operation.command ," is ", result)
+            output("Client",index,":>> Got Result after timeout of operation ", operation.toString() ," is ", result)
             self.timeout_reply += 1
             if self.timeout_reply > len(self.config.list_replica)/2:
                 output("Client",index,":>> Got from Quoram")
@@ -169,4 +172,60 @@ class Client(process):
             self.error_in_replica += 1
 
 
-    def checkIfWeHaveExpectedContent():pass
+    def resultValidation():
+        output("Client",index,":>> Test case completed! Validating Result")
+        client_res_seq = []
+        if len(self.commands) != len(self.result_sequence):
+            output("Client",index,":>> Invalid Result!")
+            return
+
+        for i in range(len(self.commands)):
+            command, state = self.command_state[i]
+            operation = makeOperation(i, command)
+            result = performOperation(operation)
+            client_res_seq.append(result)
+
+        for i in range(len(self.commands)):
+            if client_res_seq[i] != self.result_sequence[i]:
+                output("Client",index,":>> Invalid Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
+                return
+        output("Client",index,":>> Valid Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
+
+
+    def performOperation(operation):
+        import re
+        matches = re.findall(r"\'(.+?)\'", operation.command)
+
+        key = None
+        value = None
+
+        if not operation.type is 2 :
+            key = matches[0]
+            value = matches[1]
+        else:
+            key = matches[0]
+
+        if operation.type is 1:     #put
+            self.database[key] = value
+            return 'OK'
+        elif operation.type is 2:   #get
+            if key in self.database:
+                return self.database[key]
+            else:
+                return ''
+        elif operation.type is 3:   #slice
+            limit = value.split(':')
+            if key in self.database and len(self.database[key]) >= int(limit[1]):
+                val = self.database[key]
+                self.database[key] = val[int(limit[0]):int(limit[1])]
+                return 'OK'
+            else:
+                return 'FAIL'
+        elif operation.type is 4:   #append
+            if key in self.database:
+                val = self.database[key]
+                list_val = val+value
+                self.database[key] = list_val
+                return 'OK'
+            else:
+                return 'FAIL'

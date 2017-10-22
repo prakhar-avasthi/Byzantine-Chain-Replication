@@ -8,3 +8,16 @@ class Operation:
         ## get -> 2
         ## slice -> 3
         ## append -> 4
+
+
+    def toString(self):
+        action = ""
+        if self.type == 1:
+            action = "put"
+        elif self.type == 2:
+            action = "get"
+        elif self.type == 3:
+            action = "slice"
+        elif self.type == 4:
+            action = "append"
+        return action+self.command
