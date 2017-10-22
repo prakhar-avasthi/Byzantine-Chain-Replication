@@ -147,21 +147,20 @@ class Client(process):
 
     def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
         if error is None:
-            output("Client",index,":>> Got Result after timeout of operation ", operation.toString() ," is ", result)
-            self.timeout_reply += 1
-            if self.timeout_reply > len(self.config.list_replica)/2:
+            output("Client",index,":>> Got Result after timeout of operation ", operation.toString() ," is ", result, "index: ", replica_index)
 
-                ## calculate the result digest
-                result_digest = calculate_result_digest(result)
+            ## calculate the result digest
+            result_digest = calculate_result_digest(result)
 
-                ## check this digest with all the results in the result_proof so that client believe the value is correct
-                is_verified = verify(result_digest, result_proof)
+            ## check this digest with all the results in the result_proof so that client believe the value is correct
+            is_verified = verify(result_digest, result_proof)
 
-                ## [TODO] Reverify the else result
-                if is_verified:
+            if is_verified:
+                self.timeout_reply += 1
+                if self.timeout_reply > len(self.config.list_replica)/2:
                     output("Client",index,":>> Got from Quoram")
-                else:
-                    output("Client",index,":>> Result is not verified hence reconfiguration")
+            else:
+                output("Client",index,":>> Result is not verified hence reconfiguration")
         else:
             output("Client",self.index,":>> Replica: ", replica_index, " is Immutable, Requesting Olympus for new Config.")
             self.error_in_replica += 1
@@ -238,6 +237,7 @@ class Client(process):
         for result_statement in result_proof:
             try:
                 unsigned_result_statement = pickle.loads(replica_public_keys[i].verify(result_statement))
+                output("Client",self.index,":>>statement: ", unsigned_result_statement.result)
             except:
                 output("Client",self.index,":>> Key doesnot verify so terminating the Client")
                 ##send(('terminate_shuttle', to = self.replicaList[index])

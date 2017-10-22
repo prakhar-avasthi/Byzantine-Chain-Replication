@@ -65,32 +65,6 @@ class Olympus(process):
         self.replica_public_keys = public_keys
         start(replicaList)
 
-        #i = 0
-        #for i in range(self.num_replica):
-            #if i is 0:
-                #if str(i) in self.replica_failure_map:
-                    #replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
-                #else:
-                    #replica = new(Replica, args=(self, None, i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
-            #elif i is num_replica-1:
-                #if str(i) in self.replica_failure_map:
-                    #replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
-                #else:
-                    #replica = new(Replica, args=(self, None, i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
-            #else:
-                #if str(i) in self.replica_failure_map:
-                    #replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', self.replica_failure_map[str(i)]), at='ReplicaNode'+str(i))
-                #else:
-                    #replica = new(Replica, args=(self, None, i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', {}), at='ReplicaNode'+str(i))
-            #start(replica)
-            #replicaList.append(replica)
-            #i += 1
-
-        #self.config.list_replica = replicaList
-        #self.replica_public_keys = public_keys
-        #for replica in replicaList:
-            #send(('init_hist', list(replicaList)), to=replica)
-
     def parse_failures():
         output("Parsing failures")
         for failure in self.failure_list:
@@ -119,7 +93,6 @@ class Olympus(process):
 
 
 class Replica(process):
-    ##[TODO: take more parameters for the code to run successfully]
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
         self.forwarded_request = {}
         self.shuttle_request = {}
@@ -201,6 +174,7 @@ class Replica(process):
             order_statement = class_order_statement.OrderStatement()
             order_statement.order = "order"
 
+            ## failure injection scenario
             if client_index in self.forwarded_request and self.is_failure_change_operation("forwarded_request", str(client_index), str(self.forwarded_request[client_index])):
                 order_statement = self.change_operation(action, order_statment)
                 result = performOperation(order_statment.action)
@@ -228,11 +202,7 @@ class Replica(process):
             result_statement.action = action
 
             ## calculate the result digest
-            HASHER = nacl.hash.sha256
-            result_byte = pickle.dumps(result)
-            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-
-            result_statement.result= result_digest
+            result_statement.result = calculate_result_digest(result)
 
             # signing result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
@@ -312,10 +282,7 @@ class Replica(process):
             result_statement.action = action
 
             ## calculate the result digest
-            HASHER = nacl.hash.sha256
-            result_byte = pickle.dumps(result)
-            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-            result_statement.result= result_digest
+            result_statement.result= calculate_result_digest(result)
 
             # signing result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
@@ -367,17 +334,14 @@ class Replica(process):
             result_statement.action = action
 
             ## calculate the result digest
-            HASHER = nacl.hash.sha256
-            result_byte = pickle.dumps(result)
-            result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
-            result_statement.result = result_digest
+            result_statement.result = calculate_result_digest(result)
 
             # signing result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             result_proof.append(signed_result_statement)
 
             ## send result to client
-            send(('res_operation', action.operation, result, result_proof), to=client)
+            ##send(('res_operation', action.operation, result, result_proof), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.toString(), " result: ", result)
 
             ## make a new result shuttle
@@ -438,10 +402,7 @@ class Replica(process):
                 temp_result = "OK"
 
                 ## calculate the result digest
-                import nacl
-                HASHER = nacl.hash.sha256
-                result_byte = pickle.dumps(temp_result)
-                result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+                result_digest = calculate_result_digest(temp_result)
 
                 ## unsign the result statement and overwrite the new result
                 result_statement = result_shuttle.result_proof[self.index]
@@ -459,7 +420,7 @@ class Replica(process):
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
                 output("Replica",self.index,":>> Sending result shuttle back to replica: ", index-1, " operation: ", action.operation.toString())
-                send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
+                ##send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
 
     def receive(msg = ('req_operation_timeout', operation, client, client_index)):
         if self.state == 'ACTIVE':
@@ -467,13 +428,12 @@ class Replica(process):
             (found_in_history, action) = foundInHistory(operation)
 
             if found_in_history == True:
+
                 try:
                     (result_shuttle, result) = self.history[action]
-                    send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
                 except Exception:
                     output(self.index, 'Error')
 
-                result = None
                 try:
                     self.direct_client_request[client_index] += 1
                 except KeyError:
@@ -485,10 +445,7 @@ class Replica(process):
                     temp_result = "OK"
 
                     ## calculate the result digest
-                    import nacl
-                    HASHER = nacl.hash.sha256
-                    result_byte = pickle.dumps(temp_result)
-                    result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+                    result_digest = calculate_result_digest(temp_result)
 
                     ## unsign the result statement and overwrite the new result
                     result_statement = result_shuttle.result_proof[self.index]
@@ -499,10 +456,11 @@ class Replica(process):
                     signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
                     result_shuttle.result_proof[self.index] = signed_result_statement
 
-
                 elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.direct_client_request[client_index])
                     del result_shuttle.result_proof[0]
+
+                send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
 
             elif found_in_history == False and not self.type == 'head':
                 output("Replica",self.index,": Forward Retransmit to Head.")
@@ -571,8 +529,11 @@ class Replica(process):
         order_statement.action = temp_action
         return order_statement
 
-
-
+    def calculate_result_digest(result):
+        HASHER = nacl.hash.sha256
+        result_byte = pickle.dumps(result)
+        result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+        return result_digest
 
 def main():
     config = {}
