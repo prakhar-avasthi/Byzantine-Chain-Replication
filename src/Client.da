@@ -228,14 +228,12 @@ class Client(process):
         return result_digest
 
     def verify(result_digest, result_proof):
-        output("result digest is", result_digest)
         unsigned_result_statement = None
         i = 0
         for result_statement in result_proof:
             try:
                 verify_key = nacl.signing.VerifyKey(replica_public_keys[i], encoder=nacl.encoding.HexEncoder)
                 unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
-                output("Client",self.index,":>>statement: ", unsigned_result_statement.result)
             except:
                 output("Client",self.index,":>> Key doesnot verify so terminating the Client")
                 ##send(('terminate_shuttle', to = self.replicaList[index])
