@@ -390,7 +390,7 @@ class Replica(process):
             result_proof.append(signed_result_statement)
 
             ## send result to client
-            send(('res_operation', action.operation, result, result_proof), to=client)
+            ##send(('res_operation', action.operation, result, result_proof), to=client)
             output("Replica",self.index,":>> Replied res_operation to Client: ", action.operation.command, " result: ", result)
 
             ## make a new result shuttle
@@ -448,12 +448,47 @@ class Replica(process):
         if self.state == 'ACTIVE':
             output("Replica",self.index,":<< DIRECT REQUEST FROM CLIENT: ", client_index, "for operation: ", operation.command)
             (found_in_history, action) = foundInHistory(operation)
+
             if found_in_history == True:
-                 try:
+
+                try:
                     (result_shuttle, result) = self.history[action]
+                    output("######################################Found in history######################################")
                     send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
-                 except Exception:
+                except Exception:
                     output(self.index, 'Error')
+
+                result = None
+                try:
+                    self.direct_client_request[client_index] += 1
+                except KeyError:
+                    self.direct_client_request[client_index] = 1
+
+                ##fault injection scenario
+                if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("Replica",self.index,":>> Fault Change result injected from client ", client_index, " Corresponding to request ",self.direct_client_request[client_index])
+                    temp_result = "OK"
+
+                    ## calculate the result digest
+                    import nacl
+                    HASHER = nacl.hash.sha256
+                    result_byte = pickle.dumps(temp_result)
+                    result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
+
+                    ## unsign the result statement and overwrite the new result
+                    result_statement = result_shuttle.result_proof[self.index]
+                    unsigned_result_statement = pickle.loads(self.public_keys[self.index].verify(result_statement))
+                    unsigned_result_statement.result = result_digest
+
+                    ## resign the result_statement and replace it in result_proof
+                    signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
+                    result_shuttle.result_proof[self.index] = signed_result_statement
+
+
+                elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("Replica",self.index,":>> Fault Omit Head Result injected from client ", client_index, " Corresponding to request ",self.direct_client_request[client_index])
+                    del result_shuttle.result_proof[0]
+
             elif found_in_history == False and not self.type == 'head':
                 output("Replica",self.index,": Forward Retransmit to Head.")
                 send(('req_operation_timeout', operation, client, client_index), to=self.replicaList[0])
@@ -496,7 +531,7 @@ class Replica(process):
             return False
 
     def is_failure_change_result(type, client, message):
-
+        output("############ change result ##################", fault_map, type, client, message)
         try:
             (source, (c,m)) = fault_map["change_result()"]
             if (type, (client, message)) == (source, (c,m)):
@@ -505,7 +540,7 @@ class Replica(process):
             return False
 
     def is_failure_drop_result_stmt(type, client, message):
-        output("############ drop result ##################", fault_map, type, client, message)
+
         try:
             (source, (c,m)) = fault_map["drop_result_stmt()"]
             if (type, (client, message)) == (source, (c,m)):
