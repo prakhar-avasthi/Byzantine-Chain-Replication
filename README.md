@@ -38,6 +38,8 @@
      - Implemented Retransmition of operation on Client timeout.
      - Implemented sending cached result, error, forward request by replica on retransmit.
      - Implemented PseudoRandom Workload generation Algorithm.
+     - Implemented Retransmitted request sequence at Head Node.
+     - Ran the program on multiple hosts.
 
 2. Rajat Jain (@github/jainraj91)
    - **Responsibilities:**
