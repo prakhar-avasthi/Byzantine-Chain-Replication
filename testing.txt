@@ -1,0 +1,33 @@
+1. Failure Free case: No failure in scenario
+	Replicas: 3
+	Clients: 3
+	Config file: 1_failure_free.txt
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 1_failure_free.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 1_failure_free.txt
+	Log file: 1_failure_free.log
+	Validation: Valid, as result sequence of Replica is matching with operation performed at Client
+	Outcome: Pass
+
+
+2. Stress test case: Very high number of requests from one Client
+	Replicas: 5
+	Clients: 3 (includes 1 pseudorandom client with 1000 requests)
+	Config file: 2_stress_test.txt
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 2_stress_test.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 2_stress_test.txt
+	Log file: 2_stress_test.log
+	Validation: Valid, as result sequence of Replica is matching with operation performed at Client
+	Outcome: Pass
+
+3. Shuttle Fault test case: Fault Trigger: Shuttle of client on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 3_a_failure_shuttle_change_operation.txt
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 2_stress_test.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 2_stress_test.txt
+	Log file: 3_a_failure_shuttle_change_operation.log
+	Validation: Valid, as result sequence of Replica is matching with operation performed at Client
+	Outcome: Pass
