@@ -476,8 +476,7 @@ class Replica(process):
                 output("[Replica",self.index,":]>> res_operation_timeout: ",operation.toString(), " to Head Replica")
                 send(('req_operation_timeout', operation, "replica", client, client_index), to=self.replicaList[0])
                 self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
-                if await(self.waiting_for_result[operation.client_request_id][0] == 0):
-                    output("[Replica",self.index,":] Found result in Result Shuttle. Kill timer!!")
+                if await(self.waiting_for_result[operation.client_request_id][0] == 0): pass
                 elif timeout(self.timeout):
                     output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                     self.waiting_for_result[operation.client_request_id] = (0, None)
@@ -487,8 +486,7 @@ class Replica(process):
                     send(('req_operation', operation, client, client.index), to=self)
                 else:
                     self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
-                    if await(self.waiting_for_result[operation.client_request_id][0]== 0):
-                        output("[Replica",self.index,":] Found result in Result Shuttle. Kill timer!!")
+                    if await(self.waiting_for_result[operation.client_request_id][0]== 0): pass
                     elif timeout(self.timeout):
                         output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                         self.waiting_for_result[operation.client_request_id] = (0, None)
