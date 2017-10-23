@@ -96,15 +96,15 @@
 
 ## OTHER COMMENTS
 - Command to be run on Client Node
-   **Singlehost**
+   - **Singlehost**
      - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt
-   **Multihost**
+   - **Multihost**
      - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt <ip>
      
 - Command to be run on Olympus Node
-  **SingleHost**
+  - **SingleHost**
     - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt
-  **MultiHost**
+  - **MultiHost**
     - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt <ip>
 - If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
