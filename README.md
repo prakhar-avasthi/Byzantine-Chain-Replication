@@ -34,7 +34,7 @@
      - Buffer size should be 50000 bytes.
    
    - **Bugs:**
-   
+      - Title: Getting StackOverflow error in Replica, [Frequencey: Sometimes]
 
 ## CONTRIBUTIONS.
 1. Prakhar Avasthi (@github/prakhar-avasthi)
@@ -87,9 +87,9 @@
 
 
 ## LANGUAGE FEATURE USAGE. 
-- numbers of list comprehensions
-- numbers of dictionary comprehensions
-- numbers of set comprehensions
+- numbers of list comprehensions = 10
+- numbers of dictionary comprehensions = 11
+- numbers of set comprehensions - 7
 - numbers of aggregations - 0
 - numbers of quantifications-0
 
