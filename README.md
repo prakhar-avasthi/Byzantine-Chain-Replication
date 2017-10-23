@@ -76,10 +76,10 @@
 
 ## CODE SIZE.
    - **Lines of Code(LOC)** 
-    SLOC is used to obtain the LOC.
+    Github is used to obtain the LOC.
      - Algorithm:  
      - Other: 
-     - Total: 1049 Loc
+     - Total: 780 Loc
    
    - **Estimates**
      - Algorithm - 
