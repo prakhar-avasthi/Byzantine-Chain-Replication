@@ -234,17 +234,20 @@ class Replica(process):
                 output("[Replica",self.index,":] Fault: Change Operation, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement = self.change_operation(action, order_statement)
                 result = performOperation(order_statment.action)
+                output("[Replica",self.index,":] Successfully injected fault: Change operation")
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Change Result, Client ", client_index, ", Request: ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = "OK"
+                output("[Replica",self.index,":] Successfully injected fault: Change result")
             elif client_index in self.shuttle_request and\
                 self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
                 del result_proof[0]
+                output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -286,17 +289,20 @@ class Replica(process):
                 output("[Replica",self.index,":] Fault: Change operation, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement = self.change_operation(action, order_statment)
                 result = performOperation(order_statment.action)
+                output("[Replica",self.index,":] Successfully injected fault: Change operation")
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Change result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = "OK"
+                output("[Replica",self.index,":] Successfully injected fault: Change result")
             elif client_index in self.shuttle_request and\
                 self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
                 del result_proof[0]
+                output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -398,10 +404,14 @@ class Replica(process):
                 signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
                 result_shuttle.result_proof[self.index] = signed_result_statement
 
+                output("[Replica",self.index,":] Successfully injected fault: Change result")
+
             elif client_index in self.shuttle_request\
                 and self.is_failure_drop_result_stmt("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.result_shuttle_request[client_index])
                 del result_shuttle.result_proof[0]
+
+                output("[Replica",self.index,":] Successfully injected fault: Omit Head result")
 
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
@@ -572,6 +582,11 @@ class Replica(process):
 
 def main():
     test_case = sys.argv[1]
+    ip = None
+    try:
+        ip = sys.argv[2]
+    except Exception:
+        pass
     config = {}
     failure_list = []
     with open(test_case,'r') as f:
@@ -591,7 +606,8 @@ def main():
         if "failures" in key:
             failure_list.append((key,config[key]))
 
-    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], failure_list), at='OlympusNode')
+    olympus_node = 'OlympusNode' + '@' + ip if ip is not None else 'OlympusNode'
+    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], failure_list), at=olympus_node)
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:
