@@ -513,7 +513,6 @@ class Replica(process):
             return False
 
     def is_failure_change_result(type, client, message):
-        output("############ change result ##################", fault_map, type, client, message)
         try:
             (source, (c,m)) = fault_map["change_result()"]
             if (type, (client, message)) == (source, (c,m)):
