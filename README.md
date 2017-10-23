@@ -97,16 +97,8 @@
 
 
 ## OTHER COMMENTS
-- Command to be run on Client Node
-   - **Singlehost**
-     - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt
-   - **Multihost**
-     - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt 172.193.48.52 (ip address of OlympusNode)
-     
-- Command to be run on Olympus Node
-  - **SingleHost**
-    - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt
-  - **MultiHost**
     - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt 172.193.48.52 (ip address of OlympusNode)
 - If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
+
+- Client Command :- python -m da -n ClientNode --cookie COOKIE --hostname <Self_IP> --master src/Main.da <Config file name>    <Olympus Node Ip>
