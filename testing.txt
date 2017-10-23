@@ -21,13 +21,178 @@
 	Validation: Valid, as result sequence of Replica is matching with operation performed at Client
 	Outcome: Pass
 
-3. Shuttle Fault test case: Fault Trigger: Shuttle of client on 7th message
-	Replicas: 5
-	Clients: 3
+3.a Shuttle Fault test case: Fault Trigger: Shuttle of client 0 on 7th message
+	Replicas: 3
+	Clients: 0
 	Config file: 3_a_failure_shuttle_change_operation.txt
 	Command:
-		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 2_stress_test.txt
-		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 2_stress_test.txt
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n 3_a_failure_shuttle_change_operation.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 
+                3_a_failure_shuttle_change_operation.txt
 	Log file: 3_a_failure_shuttle_change_operation.log
-	Validation: Valid, as result sequence of Replica is matching with operation performed at Client
+	Validation: Replication becomes immutable as the order proof will not be verified by next replica.
+	Outcome: Pass as we were expecting immutable
+
+3.b Shuttle Fault test case: Fault Trigger: Shuttle of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 3_b_failure_shuttle_change_result.txt
+	fault : change_result()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 3_b_failure_shuttle_change_result.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 
+                3_b_failure_shuttle_change_result.txt
+	Log file: 3_b_failure_shuttle_change_result.txt.log
+	Validation: Tail replica will get immutable as the result will not be verified
+	Outcome: Pass as we were expecting immutable
+
+3.c) Shuttle Fault test case: Fault Trigger: Shuttle of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 3_b_failure_shuttle_change_result.txt
+	fault : drop_result_stmt()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 3_c_failure_shuttle_drop_result_stmt.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 
+                3_c_failure_shuttle_drop_result_stmt.txt
+	Log file: 3_c_failure_shuttle_drop_result_stmt.log
+	Validation: Tail will get immutable as the result proof will not be verified at tail node
+	Outcome: Pass as we were expecting immutable
+
+4.a) Shuttle Fault test case: Fault Trigger: client_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 4_a_failure_client_request_change_operation.txt
+	fault : change_operation()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                4_a_failure_client_request_change_operation.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                4_a_failure_client_request_change_operation.txt
+	Log file: 4_a_failure_client_request_change_operation.log
+	Validation: Valid, as the client is never timed out
 	Outcome: Pass
+
+4.b) Shuttle Fault test case: Fault Trigger: client_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 4_b_failure_client_request_change_result.txt
+	fault : change_result()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                4_b_failure_client_request_change_result.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                4_b_failure_client_request_change_result.txt
+	Log file: 4_b_failure_client_request_change_result.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+4.c) Shuttle Fault test case: Fault Trigger: client_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 4_c_failure_client_request_drop_result_stmt.txt
+	fault : drop_result_stmt()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                4_c_failure_client_request_drop_result_stmt.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                4_c_failure_client_request_drop_result_stmt.txt
+	Log file: 4_b_failure_client_request_change_result.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+5.a) Shuttle Fault test case: Fault Trigger: forward_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 5_a_failure_forwarded_request_change_operation.txt
+	fault : change_operation()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                5_a_failure_forwarded_request_change_operation.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                5_a_failure_forwarded_request_change_operation.txt
+	Log file: 5_a_failure_forwarded_request_change_operation.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+5.b) Shuttle Fault test case: Fault Trigger: forward_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 5_b_failure_forwarded_request_change_result.txt
+	fault : change_result()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                5_b_failure_forwarded_request_change_result.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                5_b_failure_forwarded_request_change_result.txt
+	Log file: 5_b_failure_forwarded_request_change_result.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+5.c) Shuttle Fault test case: Fault Trigger: forward_request of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 5_c_failure_forwarded_request_drop_result_stmt.txt
+	fault : drop_result_stmt()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                5_c_failure_forwarded_request_drop_result_stmt.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                5_c_failure_forwarded_request_drop_result_stmt.txt
+	Log file: 5_b_failure_forwarded_request_change_result.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+6.a) Shuttle Fault test case: Fault Trigger: result_shuttle of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 6_a_failure_result_shuttle_change_operation.txt
+	fault : change_operation()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                6_a_failure_result_shuttle_change_operation.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                6_a_failure_result_shuttle_change_operation.txt
+	Log file: 6_a_failure_result_shuttle_change_operation.log
+	Validation: Valid, as the client is never timed out
+	Outcome: Pass
+
+6.b) Shuttle Fault test case: Fault Trigger: result_shuttle of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 6_b_failure_result_shuttle_change_result.txt
+	fault : change_result()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                6_b_failure_result_shuttle_change_result.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                6_b_failure_result_shuttle_change_result.txt
+	Log file: 6_b_failure_result_shuttle_change_result.log
+	Validation: Node went immutable after validating the result proof in result shuttle
+	Outcome: Node went immutable as expected
+
+6.c) Shuttle Fault test case: Fault Trigger: result_shuttle of client 0 on 7th message
+	Replicas: 5
+	Clients: 3
+	Config file: 6_c_failure_result_shuttle_drop_result_stmt.txt
+	fault : change_operation()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                6_c_failure_result_shuttle_drop_result_stmt.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                6_c_failure_result_shuttle_drop_result_stmt.txt
+	Log file: 6_a_failure_result_shuttle_change_operation.log
+	Validation: Node went immutable after validating the result proof in result shuttle
+	Outcome: Node went immutable as expected
+
+7)  Stress test case: Very high number of requests from one Client
+	Replicas: 5
+	Clients: 10 (all pseudorandom clients with sane seed and 100 requests)
+	Config file: 7_stress_test.txt
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 7_stress_test.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da 7_stress_test.txt
+	Log file: 7_stress_test.log
+	Validation: InValid, as clients have conflicting keys and values
+	Outcome: Pass, as clients have conflicting keys and values
+
