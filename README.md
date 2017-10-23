@@ -97,8 +97,8 @@
 
 
 ## OTHER COMMENTS
-    - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt 172.193.48.52 (ip address of OlympusNode)
 - If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
 
-- Client Command :- python -m da -n ClientNode --cookie COOKIE --hostname <Self_IP> --master src/Main.da <Config file name>    <Olympus Node Ip>
+- Client Command : python -m da -n ClientNode --cookie COOKIE --hostname <Self_IP> --master src/Main.da <Config file name>    <Olympus Node Ip>
+-Olympus Command: python3 -m da -n OlympusNode --cookie COOKIE --hostname <SELF_IP> -D src/Main.da <Config file name> <SELF_IP>
