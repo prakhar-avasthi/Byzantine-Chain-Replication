@@ -101,4 +101,4 @@
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
 
 - Client Command : python -m da -n ClientNode --cookie COOKIE --hostname <Self_IP> --master src/Main.da <Config file name>    <Olympus Node Ip>
--Olympus Command: python3 -m da -n OlympusNode --cookie COOKIE --hostname <SELF_IP> -D src/Main.da <Config file name> <SELF_IP>
+- Olympus Command: python3 -m da -n OlympusNode --cookie COOKIE --hostname <SELF_IP> -D src/Main.da <Config file name> <SELF_IP>
