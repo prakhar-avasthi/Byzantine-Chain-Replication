@@ -1,0 +1,330 @@
+[2017-10-22 21:04:25,527] da.api<MainProcess>:INFO: Bootstrapping attempt failed due to BootstrapException('Unable to contact a peer node.',),  continuing as a master node (use '--master' to disable bootstrapping at startup).
+[2017-10-22 21:04:25,527] da.api<MainProcess>:INFO: <Node_:ClientNode> initialized at 127.0.0.1:(UdpTransport=15000, TcpTransport=15000).
+[2017-10-22 21:04:25,528] da.api<MainProcess>:INFO: Starting program <module 'Main' from 'src/Main.py'>...
+[2017-10-22 21:04:25,528] da.api<MainProcess>:INFO: Running iteration 1 ...
+[2017-10-22 21:04:25,530] da.api<MainProcess>:INFO: Waiting for remaining child processes to terminate...(Press "Ctrl-C" to force kill)
+[2017-10-22 21:04:25,634] Main.Node_<Node_:ClientNode>:INFO: Waiting to resolve name 'OlympusNode'...
+[2017-10-22 21:04:28,698] da.sim.Router<MainProcess>:INFO: Bootstrap succeeded using <UdpTransport(127.0.0.1:33057)>.
+[2017-10-22 21:04:28,699] da.api<MainProcess>:INFO: <Node_:OlympusNode> initialized at 127.0.0.1:(UdpTransport=33057, TcpTransport=39160).
+[2017-10-22 21:04:28,699] da.api<MainProcess>:INFO: Starting program <module 'Main' from 'src/Main.py'>...
+[2017-10-22 21:04:28,699] da.api<MainProcess>:INFO: Running iteration 1 ...
+[2017-10-22 21:04:28,700] da.api<MainProcess>:INFO: Waiting for remaining child processes to terminate...(Press "Ctrl-C" to force kill)
+[2017-10-22 21:04:28,737] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:] Setup
+[2017-10-22 21:04:28,825] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :] Workload:  pseudorandom(233,10)
+[2017-10-22 21:04:28,826] Client.Client<Client:f3c02#ClientNode>:OUTPUT: ["get('ice')", "put('hello','hockey')", "slice('ice','0:4')", "get('hello')", "slice('moon','0:4')", "put('hello','walk')", "append('country','hockey')", "put('moon','walk')", "append('hello','India')", "append('moon','India')"]
+[2017-10-22 21:04:28,830] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :] Workload:  put('movie','star'); append('movie',' wars'); get('movie')
+[2017-10-22 21:04:28,855] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :] Workload:  put('jedi','luke skywalker'); slice('jedi','0:4'); get('jedi')
+[2017-10-22 21:04:28,862] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:] Started
+[2017-10-22 21:04:28,873] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :] Started
+[2017-10-22 21:04:28,873] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :] Started
+[2017-10-22 21:04:28,891] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-10-22 21:04:28,892] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:] Making New Configuration
+[2017-10-22 21:04:28,899] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :] Started
+[2017-10-22 21:04:28,900] da.api<MainProcess>:INFO: Main process terminated.
+[2017-10-22 21:04:28,956] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: {}
+[2017-10-22 21:04:28,983] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: {}
+[2017-10-22 21:04:28,990] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: {}
+[2017-10-22 21:04:28,997] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Started:  head ACTIVE
+[2017-10-22 21:04:29,025] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Started:  normal_replica ACTIVE
+[2017-10-22 21:04:29,034] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-10-22 21:04:29,033] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Started:  tail ACTIVE
+[2017-10-22 21:04:29,036] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-10-22 21:04:29,037] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-10-22 21:04:29,041] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-10-22 21:04:29,041] Main.Olympus<Olympus:3b402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-10-22 21:04:29,054] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  get('ice')
+[2017-10-22 21:04:29,058] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('ice')  Client:  0
+[2017-10-22 21:04:29,063] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]>> req_operation:  put('movie','star')
+[2017-10-22 21:04:29,068] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]>> req_operation:  put('jedi','luke skywalker')
+[2017-10-22 21:04:29,070] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('ice')
+[2017-10-22 21:04:29,097] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('ice')  to Replica:  1
+[2017-10-22 21:04:29,100] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('movie','star')  Client:  1
+[2017-10-22 21:04:29,101] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('movie','star')
+[2017-10-22 21:04:29,103] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('movie','star')  to Replica:  1
+[2017-10-22 21:04:29,105] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('jedi','luke skywalker')  Client:  2
+[2017-10-22 21:04:29,106] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('jedi','luke skywalker')
+[2017-10-22 21:04:29,109] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-10-22 21:04:29,112] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('ice')  from Replica:  0
+[2017-10-22 21:04:29,114] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 1
+[2017-10-22 21:04:29,115] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('ice')
+[2017-10-22 21:04:29,117] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('ice')  to Replica:  2
+[2017-10-22 21:04:29,119] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('movie','star')  from Replica:  0
+[2017-10-22 21:04:29,121] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 1
+[2017-10-22 21:04:29,121] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('movie','star')
+[2017-10-22 21:04:29,121] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('ice')  from Replica:  1
+[2017-10-22 21:04:29,122] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('movie','star')  to Replica:  2
+[2017-10-22 21:04:29,125] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 1
+[2017-10-22 21:04:29,126] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('ice')
+[2017-10-22 21:04:29,130] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('ice')  result:  
+[2017-10-22 21:04:29,132] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('ice')  to Replica:  1
+[2017-10-22 21:04:29,134] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  get('ice')  Result:  
+[2017-10-22 21:04:29,134] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('movie','star')  from Replica:  1
+[2017-10-22 21:04:29,136] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('hello','hockey')
+[2017-10-22 21:04:29,136] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('ice')  to Replica:  2
+[2017-10-22 21:04:29,136] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 1
+[2017-10-22 21:04:29,137] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('ice')  to Replica:  0
+[2017-10-22 21:04:29,137] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 1
+[2017-10-22 21:04:29,138] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('movie','star')
+[2017-10-22 21:04:29,138] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('hello','hockey')  Client:  0
+[2017-10-22 21:04:29,139] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('hello','hockey')
+[2017-10-22 21:04:29,141] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('movie','star')  result:  OK
+[2017-10-22 21:04:29,142] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('hello','hockey')  to Replica:  1
+[2017-10-22 21:04:29,145] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('movie','star')  to Replica:  1
+[2017-10-22 21:04:29,146] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('ice')  to Replica:  1
+[2017-10-22 21:04:29,147] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]<< res_operation:  put('movie','star')  Result:  OK
+[2017-10-22 21:04:29,149] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]>> req_operation:  append('movie',' wars')
+[2017-10-22 21:04:29,151] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  append('movie',' wars')  Client:  1
+[2017-10-22 21:04:29,152] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  append('movie',' wars')
+[2017-10-22 21:04:29,156] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('movie','star')  to Replica:  2
+[2017-10-22 21:04:29,157] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  append('movie',' wars')  to Replica:  1
+[2017-10-22 21:04:29,157] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 1 1
+[2017-10-22 21:04:29,157] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('movie','star')  to Replica:  0
+[2017-10-22 21:04:29,159] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('jedi','luke skywalker')  from Replica:  0
+[2017-10-22 21:04:29,160] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 1
+[2017-10-22 21:04:29,160] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('jedi','luke skywalker')
+[2017-10-22 21:04:29,160] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('movie','star')  to Replica:  1
+[2017-10-22 21:04:29,161] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('jedi','luke skywalker')  to Replica:  2
+[2017-10-22 21:04:29,162] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('hello','hockey')  from Replica:  0
+[2017-10-22 21:04:29,163] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 2
+[2017-10-22 21:04:29,164] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('hello','hockey')
+[2017-10-22 21:04:29,165] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('hello','hockey')  to Replica:  2
+[2017-10-22 21:04:29,165] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  append('movie',' wars')  from Replica:  0
+[2017-10-22 21:04:29,166] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 2
+[2017-10-22 21:04:29,167] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  append('movie',' wars')
+[2017-10-22 21:04:29,168] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  append('movie',' wars')  to Replica:  2
+[2017-10-22 21:04:29,169] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('jedi','luke skywalker')  from Replica:  1
+[2017-10-22 21:04:29,172] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 1
+[2017-10-22 21:04:29,172] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('jedi','luke skywalker')
+[2017-10-22 21:04:29,175] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('jedi','luke skywalker')  result:  OK
+[2017-10-22 21:04:29,177] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-10-22 21:04:29,179] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]<< res_operation:  put('jedi','luke skywalker')  Result:  OK
+[2017-10-22 21:04:29,179] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('hello','hockey')  from Replica:  1
+[2017-10-22 21:04:29,180] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]>> req_operation:  slice('jedi','0:4')
+[2017-10-22 21:04:29,181] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 2
+[2017-10-22 21:04:29,181] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('hello','hockey')
+[2017-10-22 21:04:29,182] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('jedi','0:4')  Client:  2
+[2017-10-22 21:04:29,183] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('jedi','0:4')
+[2017-10-22 21:04:29,185] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('hello','hockey')  result:  OK
+[2017-10-22 21:04:29,185] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-10-22 21:04:29,187] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('hello','hockey')  Result:  OK
+[2017-10-22 21:04:29,188] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('ice','0:4')
+[2017-10-22 21:04:29,189] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('hello','hockey')  to Replica:  1
+[2017-10-22 21:04:29,189] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('jedi','0:4')  from Replica:  0
+[2017-10-22 21:04:29,190] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 2
+[2017-10-22 21:04:29,192] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('jedi','0:4')
+[2017-10-22 21:04:29,192] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  append('movie',' wars')  from Replica:  1
+[2017-10-22 21:04:29,193] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('jedi','0:4')  to Replica:  2
+[2017-10-22 21:04:29,193] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 2
+[2017-10-22 21:04:29,194] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  append('movie',' wars')
+[2017-10-22 21:04:29,194] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('ice','0:4')  Client:  0
+[2017-10-22 21:04:29,195] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('ice','0:4')
+[2017-10-22 21:04:29,197] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('jedi','luke skywalker')  to Replica:  2
+[2017-10-22 21:04:29,197] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 2 1
+[2017-10-22 21:04:29,197] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('jedi','luke skywalker')  to Replica:  0
+[2017-10-22 21:04:29,198] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('ice','0:4')  to Replica:  1
+[2017-10-22 21:04:29,199] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]<< res_operation:  append('movie',' wars')  Result:  OK
+[2017-10-22 21:04:29,200] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]>> req_operation:  get('movie')
+[2017-10-22 21:04:29,199] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  append('movie',' wars')  result:  OK
+[2017-10-22 21:04:29,202] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('hello','hockey')  to Replica:  2
+[2017-10-22 21:04:29,202] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 2
+[2017-10-22 21:04:29,203] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('hello','hockey')  to Replica:  0
+[2017-10-22 21:04:29,203] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-10-22 21:04:29,203] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  append('movie',' wars')  to Replica:  1
+[2017-10-22 21:04:29,204] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('ice','0:4')  from Replica:  0
+[2017-10-22 21:04:29,205] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('jedi','0:4')  from Replica:  1
+[2017-10-22 21:04:29,207] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 3
+[2017-10-22 21:04:29,207] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 2
+[2017-10-22 21:04:29,208] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('movie')  Client:  1
+[2017-10-22 21:04:29,214] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('ice','0:4')
+[2017-10-22 21:04:29,214] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('jedi','0:4')
+[2017-10-22 21:04:29,218] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('jedi','0:4')  result:  OK
+[2017-10-22 21:04:29,216] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('ice','0:4')  to Replica:  2
+[2017-10-22 21:04:29,220] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-10-22 21:04:29,220] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]<< res_operation:  slice('jedi','0:4')  Result:  OK
+[2017-10-22 21:04:29,221] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]>> req_operation:  get('jedi')
+[2017-10-22 21:04:29,222] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('movie')
+[2017-10-22 21:04:29,222] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('ice','0:4')  from Replica:  1
+[2017-10-22 21:04:29,224] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 3
+[2017-10-22 21:04:29,224] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('ice','0:4')
+[2017-10-22 21:04:29,225] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('movie')  to Replica:  1
+[2017-10-22 21:04:29,225] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  append('movie',' wars')  to Replica:  2
+[2017-10-22 21:04:29,226] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 1 2
+[2017-10-22 21:04:29,226] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  append('movie',' wars')  to Replica:  0
+[2017-10-22 21:04:29,227] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('ice','0:4')  result:  FAIL
+[2017-10-22 21:04:29,230] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  slice('ice','0:4')  Result:  FAIL
+[2017-10-22 21:04:29,230] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('jedi','0:4')  to Replica:  2
+[2017-10-22 21:04:29,231] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 2 2
+[2017-10-22 21:04:29,231] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('jedi','0:4')  to Replica:  0
+[2017-10-22 21:04:29,232] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  get('hello')
+[2017-10-22 21:04:29,234] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('movie')  from Replica:  0
+[2017-10-22 21:04:29,234] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('hello','hockey')  to Replica:  1
+[2017-10-22 21:04:29,234] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('ice','0:4')  to Replica:  1
+[2017-10-22 21:04:29,234] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('jedi')  Client:  2
+[2017-10-22 21:04:29,235] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 3
+[2017-10-22 21:04:29,236] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('jedi')
+[2017-10-22 21:04:29,235] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('movie')
+[2017-10-22 21:04:29,237] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('movie')  to Replica:  2
+[2017-10-22 21:04:29,238] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('jedi')  to Replica:  1
+[2017-10-22 21:04:29,239] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('movie')  from Replica:  1
+[2017-10-22 21:04:29,240] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('ice','0:4')  to Replica:  2
+[2017-10-22 21:04:29,240] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 3
+[2017-10-22 21:04:29,240] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('ice','0:4')  to Replica:  0
+[2017-10-22 21:04:29,241] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  append('movie',' wars')  to Replica:  1
+[2017-10-22 21:04:29,242] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 1 3
+[2017-10-22 21:04:29,242] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('movie')
+[2017-10-22 21:04:29,242] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('jedi')  from Replica:  0
+[2017-10-22 21:04:29,243] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 3
+[2017-10-22 21:04:29,244] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('jedi')
+[2017-10-22 21:04:29,244] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-10-22 21:04:29,245] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('movie')  result:  star wars
+[2017-10-22 21:04:29,245] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('hello')  Client:  0
+[2017-10-22 21:04:29,246] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('hello')
+[2017-10-22 21:04:29,247] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('movie')  to Replica:  1
+[2017-10-22 21:04:29,247] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :]<< res_operation:  get('movie')  Result:  star wars
+[2017-10-22 21:04:29,247] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :] Test case completed! Validating Result
+[2017-10-22 21:04:29,249] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('hello')  to Replica:  1
+[2017-10-22 21:04:29,249] Client.Client<Client:f3c03#ClientNode>:OUTPUT: [Client 1 :] Valid Final Result! Client:  ['OK', 'OK', 'star wars'] , Replica:  ['OK', 'OK', 'star wars']
+[2017-10-22 21:04:29,251] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('jedi')  to Replica:  2
+[2017-10-22 21:04:29,252] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('ice','0:4')  to Replica:  1
+[2017-10-22 21:04:29,253] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('movie')  to Replica:  2
+[2017-10-22 21:04:29,253] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 1 3
+[2017-10-22 21:04:29,253] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('movie')  to Replica:  0
+[2017-10-22 21:04:29,255] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('hello')  from Replica:  0
+[2017-10-22 21:04:29,256] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 4
+[2017-10-22 21:04:29,256] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('hello')
+[2017-10-22 21:04:29,256] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('jedi')  from Replica:  1
+[2017-10-22 21:04:29,257] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('movie')  to Replica:  1
+[2017-10-22 21:04:29,257] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('hello')  to Replica:  2
+[2017-10-22 21:04:29,258] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 2 3
+[2017-10-22 21:04:29,259] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('jedi')
+[2017-10-22 21:04:29,260] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('jedi')  result:  luke
+[2017-10-22 21:04:29,263] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :]<< res_operation:  get('jedi')  Result:  luke
+[2017-10-22 21:04:29,263] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('jedi')  to Replica:  1
+[2017-10-22 21:04:29,263] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :] Test case completed! Validating Result
+[2017-10-22 21:04:29,266] Client.Client<Client:f3c04#ClientNode>:OUTPUT: [Client 2 :] Valid Final Result! Client:  ['OK', 'OK', 'luke'] , Replica:  ['OK', 'OK', 'luke']
+[2017-10-22 21:04:29,267] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('hello')  from Replica:  1
+[2017-10-22 21:04:29,269] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('jedi')  to Replica:  2
+[2017-10-22 21:04:29,269] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 4
+[2017-10-22 21:04:29,269] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('hello')
+[2017-10-22 21:04:29,269] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 2 3
+[2017-10-22 21:04:29,270] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('jedi')  to Replica:  0
+[2017-10-22 21:04:29,272] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('hello')  result:  hockey
+[2017-10-22 21:04:29,273] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('jedi')  to Replica:  1
+[2017-10-22 21:04:29,274] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('hello')  to Replica:  1
+[2017-10-22 21:04:29,274] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  get('hello')  Result:  hockey
+[2017-10-22 21:04:29,276] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('moon','0:4')
+[2017-10-22 21:04:29,277] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('moon','0:4')  Client:  0
+[2017-10-22 21:04:29,278] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('moon','0:4')
+[2017-10-22 21:04:29,278] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('hello')  to Replica:  2
+[2017-10-22 21:04:29,278] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 4
+[2017-10-22 21:04:29,279] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('hello')  to Replica:  0
+[2017-10-22 21:04:29,280] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('moon','0:4')  to Replica:  1
+[2017-10-22 21:04:29,282] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('moon','0:4')  from Replica:  0
+[2017-10-22 21:04:29,283] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('hello')  to Replica:  1
+[2017-10-22 21:04:29,284] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 5
+[2017-10-22 21:04:29,284] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('moon','0:4')
+[2017-10-22 21:04:29,285] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('moon','0:4')  to Replica:  2
+[2017-10-22 21:04:29,287] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('moon','0:4')  from Replica:  1
+[2017-10-22 21:04:29,289] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 5
+[2017-10-22 21:04:29,289] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('moon','0:4')
+[2017-10-22 21:04:29,291] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('moon','0:4')  result:  FAIL
+[2017-10-22 21:04:29,293] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  slice('moon','0:4')  Result:  FAIL
+[2017-10-22 21:04:29,293] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('moon','0:4')  to Replica:  1
+[2017-10-22 21:04:29,295] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('hello','walk')
+[2017-10-22 21:04:29,297] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('moon','0:4')  to Replica:  2
+[2017-10-22 21:04:29,298] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 5
+[2017-10-22 21:04:29,298] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('moon','0:4')  to Replica:  0
+[2017-10-22 21:04:29,300] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('hello','walk')  Client:  0
+[2017-10-22 21:04:29,301] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('hello','walk')
+[2017-10-22 21:04:29,307] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('hello','walk')  to Replica:  1
+[2017-10-22 21:04:29,309] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('hello','walk')  from Replica:  0
+[2017-10-22 21:04:29,310] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('moon','0:4')  to Replica:  1
+[2017-10-22 21:04:29,310] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 6
+[2017-10-22 21:04:29,311] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('hello','walk')
+[2017-10-22 21:04:29,312] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('hello','walk')  to Replica:  2
+[2017-10-22 21:04:29,313] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('hello','walk')  from Replica:  1
+[2017-10-22 21:04:29,315] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 6
+[2017-10-22 21:04:29,315] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('hello','walk')
+[2017-10-22 21:04:29,317] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('hello','walk')  result:  OK
+[2017-10-22 21:04:29,319] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('hello','walk')  to Replica:  1
+[2017-10-22 21:04:29,321] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('hello','walk')  Result:  OK
+[2017-10-22 21:04:29,322] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  append('country','hockey')
+[2017-10-22 21:04:29,325] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  append('country','hockey')  Client:  0
+[2017-10-22 21:04:29,326] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  append('country','hockey')
+[2017-10-22 21:04:29,328] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('hello','walk')  to Replica:  2
+[2017-10-22 21:04:29,328] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 6
+[2017-10-22 21:04:29,329] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('hello','walk')  to Replica:  0
+[2017-10-22 21:04:29,334] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  append('country','hockey')  to Replica:  1
+[2017-10-22 21:04:29,336] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  append('country','hockey')  from Replica:  0
+[2017-10-22 21:04:29,337] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 7
+[2017-10-22 21:04:29,337] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('hello','walk')  to Replica:  1
+[2017-10-22 21:04:29,337] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  append('country','hockey')
+[2017-10-22 21:04:29,338] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  append('country','hockey')  to Replica:  2
+[2017-10-22 21:04:29,340] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  append('country','hockey')  from Replica:  1
+[2017-10-22 21:04:29,342] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 7
+[2017-10-22 21:04:29,343] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  append('country','hockey')
+[2017-10-22 21:04:29,345] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  append('country','hockey')  result:  FAIL
+[2017-10-22 21:04:29,347] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  append('country','hockey')  to Replica:  1
+[2017-10-22 21:04:29,347] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  append('country','hockey')  Result:  FAIL
+[2017-10-22 21:04:29,348] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('moon','walk')
+[2017-10-22 21:04:29,349] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  append('country','hockey')  to Replica:  2
+[2017-10-22 21:04:29,350] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 7
+[2017-10-22 21:04:29,350] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('moon','walk')  Client:  0
+[2017-10-22 21:04:29,350] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  append('country','hockey')  to Replica:  0
+[2017-10-22 21:04:29,350] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('moon','walk')
+[2017-10-22 21:04:29,353] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('moon','walk')  to Replica:  1
+[2017-10-22 21:04:29,354] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('moon','walk')  from Replica:  0
+[2017-10-22 21:04:29,355] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  append('country','hockey')  to Replica:  1
+[2017-10-22 21:04:29,356] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 8
+[2017-10-22 21:04:29,356] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('moon','walk')
+[2017-10-22 21:04:29,357] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('moon','walk')  to Replica:  2
+[2017-10-22 21:04:29,359] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('moon','walk')  from Replica:  1
+[2017-10-22 21:04:29,361] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 8
+[2017-10-22 21:04:29,361] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('moon','walk')
+[2017-10-22 21:04:29,362] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('moon','walk')  result:  OK
+[2017-10-22 21:04:29,364] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('moon','walk')  to Replica:  1
+[2017-10-22 21:04:29,365] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('moon','walk')  Result:  OK
+[2017-10-22 21:04:29,366] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  append('hello','India')
+[2017-10-22 21:04:29,367] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  append('hello','India')  Client:  0
+[2017-10-22 21:04:29,368] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('moon','walk')  to Replica:  2
+[2017-10-22 21:04:29,368] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 8
+[2017-10-22 21:04:29,368] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('moon','walk')  to Replica:  0
+[2017-10-22 21:04:29,368] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  append('hello','India')
+[2017-10-22 21:04:29,370] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  append('hello','India')  to Replica:  1
+[2017-10-22 21:04:29,372] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  append('hello','India')  from Replica:  0
+[2017-10-22 21:04:29,373] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('moon','walk')  to Replica:  1
+[2017-10-22 21:04:29,373] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 9
+[2017-10-22 21:04:29,374] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  append('hello','India')
+[2017-10-22 21:04:29,375] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  append('hello','India')  to Replica:  2
+[2017-10-22 21:04:29,380] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  append('hello','India')  from Replica:  1
+[2017-10-22 21:04:29,382] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 9
+[2017-10-22 21:04:29,382] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  append('hello','India')
+[2017-10-22 21:04:29,383] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  append('hello','India')  result:  OK
+[2017-10-22 21:04:29,385] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  append('hello','India')  to Replica:  1
+[2017-10-22 21:04:29,385] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  append('hello','India')  Result:  OK
+[2017-10-22 21:04:29,386] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  append('moon','India')
+[2017-10-22 21:04:29,387] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  append('moon','India')  Client:  0
+[2017-10-22 21:04:29,388] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  append('hello','India')  to Replica:  2
+[2017-10-22 21:04:29,388] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  append('moon','India')
+[2017-10-22 21:04:29,388] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 9
+[2017-10-22 21:04:29,389] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  append('hello','India')  to Replica:  0
+[2017-10-22 21:04:29,391] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  append('moon','India')  to Replica:  1
+[2017-10-22 21:04:29,392] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  append('moon','India')  from Replica:  0
+[2017-10-22 21:04:29,393] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  append('hello','India')  to Replica:  1
+[2017-10-22 21:04:29,394] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 10
+[2017-10-22 21:04:29,395] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  append('moon','India')
+[2017-10-22 21:04:29,397] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  append('moon','India')  to Replica:  2
+[2017-10-22 21:04:29,399] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  append('moon','India')  from Replica:  1
+[2017-10-22 21:04:29,400] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: ############ change result ################## {} shuttle 0 10
+[2017-10-22 21:04:29,401] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  append('moon','India')
+[2017-10-22 21:04:29,402] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  append('moon','India')  result:  OK
+[2017-10-22 21:04:29,404] Main.Replica<Replica:3b405#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  append('moon','India')  to Replica:  1
+[2017-10-22 21:04:29,405] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  append('moon','India')  Result:  OK
+[2017-10-22 21:04:29,405] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :] Test case completed! Validating Result
+[2017-10-22 21:04:29,409] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  append('moon','India')  to Replica:  2
+[2017-10-22 21:04:29,409] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: ############ change result ################## {} result_shuttle 0 10
+[2017-10-22 21:04:29,409] Main.Replica<Replica:3b403#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  append('moon','India')  to Replica:  0
+[2017-10-22 21:04:29,411] Client.Client<Client:f3c02#ClientNode>:OUTPUT: [Client 0 :] Valid Final Result! Client:  ['', 'OK', 'FAIL', 'hockey', 'FAIL', 'OK', 'FAIL', 'OK', 'OK', 'OK'] , Replica:  ['', 'OK', 'FAIL', 'hockey', 'FAIL', 'OK', 'FAIL', 'OK', 'OK', 'OK']
+[2017-10-22 21:04:29,412] Main.Replica<Replica:3b404#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  append('moon','India')  to Replica:  1
+[2017-10-22 21:04:30,667] da.api<MainProcess>:WARNING: Received keyboard interrupt. 
+[2017-10-22 21:04:30,716] da.endpoint.TcpTransport<MainProcess>:WARNING: Possible corrupted cache entry for ('127.0.0.1', 39160)

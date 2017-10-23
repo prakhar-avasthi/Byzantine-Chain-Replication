@@ -1,5 +1,0 @@
-class History:
-    def __init__(self):
-      self.action = None
-      self.order_proof_list = None
-      self.result_proof_list = None
