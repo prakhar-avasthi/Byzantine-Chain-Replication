@@ -145,7 +145,7 @@ class Replica(process):
     def receive(msg = ('req_operation', operation, client, client_index)):
         ## If the replica is head node, it will create a forward shuttle
         if self.type == 'head' and state == 'ACTIVE':
-            output("[Replica",self.index,":]<< req_operation, Client", client_index, ", operation: ", operation.toString())
+            output("[Replica",self.index,":]<< req_operation: ", operation.toString(), " Client: ", client_index)
 
             #### assign slot number ######
             try:
@@ -192,12 +192,12 @@ class Replica(process):
             forward_shuttle.action = action
             forward_shuttle.order_proof = order_proof
             forward_shuttle.result_proof = result_proof
-            output("[Replica",self.index,":]>> Shuttle to Replica",index+1, " operation: ", action.operation.toString())
+            output("[Replica",self.index,":]>> Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         action = forward_shuttle.action
-        output("[Replica",self.index,":]<< Shuttle from Replica ,",self.index-1,", operation: ", action.operation.toString())
+        output("[Replica",self.index,":]<< Shuttle: ", action.operation.toString(), " from Replica: ", index-1)
 
         result = None
         try:
@@ -231,17 +231,17 @@ class Replica(process):
             #### fault injection scenario
             if client_index in self.shuttle_request and\
                 self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
-                output("[Replica",self.index,":]Change Operation Fault Injected, Client ", client_index, ", Request ",self.shuttle_request[client_index])
+                output("[Replica",self.index,":] Fault: Change Operation, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement = self.change_operation(action, order_statement)
                 result = performOperation(order_statment.action)
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                output("[Replica",self.index,":] Change Result Fault Injected, Client ", client_index, ", Request: ",self.shuttle_request[client_index])
+                output("[Replica",self.index,":] Fault: Change Result, Client ", client_index, ", Request: ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = "OK"
             elif client_index in self.shuttle_request and\
                 self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                output("[Replica",self.index,":] Omit Head Result Fault Injected, Client ", client_index, ", Request ",self.shuttle_request[client_index])
+                output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
                 result = performOperation(action.operation)
                 del result_proof[0]
@@ -268,7 +268,7 @@ class Replica(process):
             result_proof.append(signed_result_statement)
 
             ######## Forward Shuttle #######
-            output("[Replica",self.index,":]>> Shuttle to Replica: ", index+1, " operation: ", action.operation.toString())
+            output("[Replica",self.index,":]>> Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
 
 
@@ -322,7 +322,7 @@ class Replica(process):
 
             ##### Send Result to Client ######
             send(('res_operation', action.operation, result, result_proof), to=client)
-            output("[Replica",self.index,":]>> res_operation to Client: ", action.operation.toString(), " result: ", result)
+            output("[Replica",self.index,":]>> res_operation: ", action.operation.toString(), " result: ", result)
 
 
             ###### Create Result Shuttle #####
@@ -344,7 +344,7 @@ class Replica(process):
                 send(('wedged', self, self.index, self.database), to = olympus)
             else:
                 self.history[action] = (result_shuttle, result)
-                output("[Replica",self.index,":]>> Result Shuttle to Replica: ", index-1, " operation: ", action.operation.toString())
+                output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
 
     def receive(msg = ('result_shuttle', replica, result_shuttle, result, client_index)):
@@ -372,8 +372,7 @@ class Replica(process):
                     wait_operation[1] = None
                     self.waiting_for_result[action.operation.client_request_id] = wait_operation
 
-            output("[Replica",self.index,":]<< Result_shuttle from Replica: ", self.index+1, ", operation: ", action.operation.toString())
-
+            output("[Replica",self.index,":]<< Result Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
             ## fault injection case
             try:
                 self.result_shuttle_request[client_index] += 1
@@ -406,15 +405,15 @@ class Replica(process):
 
             if not type == 'head' and state == 'ACTIVE':
                 ## send the shuttle to next replica
-                output("[Replica",self.index,":]>> Result shuttle to Replica: ", index-1, " operation: ", action.operation.toString())
+                output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
 
     def receive(msg = ('req_operation_timeout', operation, source, client, client_index)):
         if self.state == 'ACTIVE':
-            ##if source == "client":
-                ##output("[Replica",self.index,":]<< req_operation_timeout, Client: ", client_index, ", Operation: ", operation.toString())
-            ##else:
-                ##output("[Replica",self.index,":]<< req_operation_timeout, from Replica without history, Client: ", client_index, ", operation: ", operation.toString())
+            if source == "client":
+                output("[Replica",self.index,":]<< req_operation_timeout: ", operation.toString(), " Client: ", client_index)
+            else:
+                output("[Replica",self.index,":]<< req_operation_timeout: ", operation.toString(), " from Replica[no history], Client: ", client_index)
             (found_in_history, action) = foundInHistory(operation)
 
             if found_in_history == True:
@@ -462,11 +461,11 @@ class Replica(process):
                     output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",message_number)
                     del result_shuttle.result_proof[0]
 
-                output("[Replica",self.index,":]>> res_operation_timeout to Client: ", operation.toString(), " result: ", result)
+                output("[Replica",self.index,":]>> res_operation_timeout: ",operation.toString(), " result: ", result, " to Client")
                 send(('res_operation_timeout', operation, result_shuttle.result_proof, result, self, self.index, None), to=client)
 
             elif found_in_history == False and not self.type == 'head':
-                output("[Replica",self.index,":]>> res_operation_timeout to Head Replica")
+                output("[Replica",self.index,":]>> res_operation_timeout: ",operation.toString(), " to Head Replica")
                 send(('req_operation_timeout', operation, "replica", client, client_index), to=self.replicaList[0])
                 self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
                 if await(self.waiting_for_result[operation.client_request_id][0] == 0):
@@ -487,7 +486,7 @@ class Replica(process):
                     elif timeout(self.timeout):
                         output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                         self.waiting_for_result[operation.client_request_id] = (0, None)
-                        
+
         elif self.state == 'IMMUTABLE':
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
 

@@ -7,7 +7,7 @@ class Client(process):
     def setup(olympus, index, workload, timeout):
         import re
         self.config = None
-        output("Client",index,":>> workload: ", workload)
+        output("[Client",index,":] Workload: ", workload)
 
         self.commands = None
         self.timeout_reply = 0
@@ -28,7 +28,6 @@ class Client(process):
         if not self.commands is None:
             for i in range(len(self.commands)):
                 self.command_state[i] = [self.commands[i], 100]       ## State 100 -> not started
-
 
     def generatePseudoRandomWorkLoad(seq_seed, seq_len):
         import random
@@ -55,9 +54,8 @@ class Client(process):
                 commands.append(data)
         output(commands)
 
-
     def run():
-        output("Client",index,":>> Started")
+        output("[Client",index,":] Started")
         if self.config is None:
             send(('req_get_current_configuration', self), to=olympus)
             await(some(received(('res_get_current_configuration', config, replica_public_keys))))
@@ -69,18 +67,17 @@ class Client(process):
         -- l
         await(some(received(('terminate_client'))))
 
-
     def receive (msg= ('res_get_current_configuration', config, replica_public_keys)):
         self.config = config
         self.replica_public_keys = replica_public_keys
-
 
     def sendOperation(key):
         command_and_state = self.command_state[key]
         operation = makeOperation(key, command_and_state[0])
         command_and_state[1] = 101          ## State 101 -> in progress
-        #Sending operation to HeadNode
-        output("Client",index,":>> Sending operation to Head Node: ", operation.toString())
+
+        ##### Sending operation to HeadNode ###
+        output("[Client",index,":]>> req_operation: ", operation.toString())
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         self.wait_for_result = 1
@@ -88,17 +85,19 @@ class Client(process):
         elif timeout(timeout):
             self.timeout_reply = 0
             self.error_in_replica = 0
-            output("Client",index,":>> Client Timeout.")
+            output("[Client",index,":] Client Timeout.")
             for key in self.command_state.keys():
                 val = self.command_state[key]
                 if val[1] == 101:
                     resend_operation = makeOperation(key, val[0])
+                    i = 0;
                     for replica in self.config.list_replica:
+                        output("[Client",index,":]>> req_operation_timeout: Replica: ",i, operation.toString())
                         send(('req_operation_timeout', resend_operation, "client", self, self.index), to=replica)
+                        i += 1
                     if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0): pass
                     elif timeout(timeout):
-                        output("Client",index,":>> Not received from Quoram, Terminate System.")
-
+                        output("[Client",index,":] Not received from Quoram, Terminate System.")
 
     def makeOperation(seq_id, command):
         command = command.strip()
@@ -120,7 +119,6 @@ class Client(process):
             operation.command = command[6:]
         return operation
 
-
     def receive (msg= ('res_operation', operation, result, result_proof)):
 
         discard_flag = False
@@ -133,7 +131,7 @@ class Client(process):
 
         ## [TODO] handle the else case
         if is_verified:
-            output("Client",index,":>> Result of operation ", operation.toString() ," is ", result)
+            output("[Client",index,":]<< res_operation: ", operation.toString() ," Result: ", result)
             self.result_sequence.append(result)
             val = self.command_state[operation.client_seq_id-1]
             val[1] = 102       ## State 102 -> completed
@@ -141,10 +139,9 @@ class Client(process):
             self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
             discard_flag = False
 
-
     def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
         if error is None:
-            output("Client",index,":>> Got Result after timeout of operation ", operation.toString() ," is ", result, "index: ", replica_index)
+            output("Client",index,":<< res_operation_timeout: ", operation.toString() ," Result: ", result, ", Replica: ", replica_index)
 
             ## calculate the result digest
             result_digest = calculate_result_digest(result)
@@ -155,19 +152,18 @@ class Client(process):
             if is_verified:
                 self.timeout_reply += 1
                 if self.timeout_reply > len(self.config.list_replica)/2:
-                    output("Client",index,":>> Got from Quoram")
+                    output("[Client",index,":] Got correct result from Quoram")
             else:
-                output("Client",index,":>> Result is not verified hence reconfiguration")
+                output("[Client",index,":] Invalid Result, Request Reconfiguration")
         else:
-            output("Client",self.index,":>> Replica: ", replica_index, " is Immutable, Requesting Olympus for new Config.")
+            output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request Reconfiguration")
             self.error_in_replica += 1
 
-
     def resultValidation():
-        output("Client",index,":>> Test case completed! Validating Result")
+        output("[Client",index,":] Test case completed! Validating Result")
         client_res_seq = []
         if len(self.commands) != len(self.result_sequence):
-            output("Client",index,":>> Invalid Result!")
+            output("[Client",index,"] Invalid Final Result!")
             return
 
         for i in range(len(self.commands)):
@@ -178,10 +174,9 @@ class Client(process):
 
         for i in range(len(self.commands)):
             if client_res_seq[i] != self.result_sequence[i]:
-                output("Client",index,":>> Invalid Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
+                output("[Client",index,":] Invalid Final Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
                 return
-        output("Client",index,":>> Valid Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
-
+        output("[Client",index,":] Valid Final Result! Client: ", client_res_seq, ", Replica: ", self.result_sequence)
 
     def performOperation(operation):
         import re
@@ -235,13 +230,13 @@ class Client(process):
                 verify_key = nacl.signing.VerifyKey(replica_public_keys[i], encoder=nacl.encoding.HexEncoder)
                 unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
             except:
-                output("Client",self.index,":>> Key doesnot verify so terminating the Client")
+                output("[Client",self.index,":] Invalid Result Proof!")
                 ##send(('terminate_shuttle', to = self.replicaList[index])
 
-            output("Client",index,":>> Checking the cryptohash")
+            #output("[Client",index,":] Checking Cryptohash")
             i += 1
             if not unsigned_result_statement is None and unsigned_result_statement.result != result_digest:
-                output("Client",index,":>> Result is not verified hence reconfiguration")
+                output("[Client",index,":]Invalid Result, Reuest Reconfiguration")
                 return False;
                 break
         return True
