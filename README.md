@@ -12,9 +12,10 @@
 ## INSTRUCTIONS.
 1. Install Python3
 2. Install Distalgo: "sudo pip3 install pyDistAlgo"
-3. Open tow terminal in ubuntu
-4. run command on Terminal 1: "python3 -m da -F info -f -n ClientNode Main.da"
-5. run command on Terminal 2: "python3 -m da -F info -f -n OlympusNode -D Main.da"
+3. Install PyNacl: "sudo pip3 install pynacl"
+3. Open two terminal in ubuntu
+4. run command on Terminal 1(Client Node): "python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt"
+5. run command on Terminal 2 (Olympus Node): "python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt"
 
 
 ## WORKLOAD GENERATION.
@@ -34,7 +35,7 @@
      - Buffer size should be 50000 bytes.
    
    - **Bugs:**
-   
+      - Title: Getting StackOverflow error in Replica, [Frequencey: Sometimes]
 
 ## CONTRIBUTIONS.
 1. Prakhar Avasthi (@github/prakhar-avasthi)
@@ -49,6 +50,7 @@
      - Implemented Retransmitted request sequence at Head Node.
      - Implemented dictionary validation after end of test case.
      - Ran the program on multiple hosts.
+     - Written README.md
 
 2. Rajat Jain (@github/jainraj91)
    - **Responsibilities:**
@@ -76,35 +78,27 @@
 
 ## CODE SIZE.
    - **Lines of Code(LOC)** 
-    SLOC is used to obtain the LOC.
-     - Algorithm:  
-     - Other: 
-     - Total: 1049 Loc
+    Github is used to obtain the LOC.
+     - Algorithm: 310 LOC
+     - Other: 470 LOC
+     - Total: 780 LOC
    
    - **Estimates**
-     - Algorithm - 
-     - Other functionality interleaved - 
+     - Algorithm - 60% (186 LOC)
+     - Other functionality interleaved - 40% (124 LOC) 
 
 
 ## LANGUAGE FEATURE USAGE. 
-- numbers of list comprehensions
-- numbers of dictionary comprehensions
-- numbers of set comprehensions
+- numbers of list comprehensions = 10
+- numbers of dictionary comprehensions = 11
+- numbers of set comprehensions - 7
 - numbers of aggregations - 0
 - numbers of quantifications-0
 
 
 ## OTHER COMMENTS
-- Command to be run on Client Node
-   - **Singlehost**
-     - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt
-   - **Multihost**
-     - python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt 172.193.48.52 (ip address of OlympusNode)
-     
-- Command to be run on Olympus Node
-  - **SingleHost**
-    - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt
-  - **MultiHost**
     - python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt 172.193.48.52 (ip address of OlympusNode)
 - If runnning both ClientNode and OlympusNode in same machine, please start ClientNode first and then start OlympusNode.
 - If runnning both ClientNode and OlympusNode in different machines, please start OlympusNode first and then start ClientNode.
+
+- Client Command :- python -m da -n ClientNode --cookie COOKIE --hostname <Self_IP> --master src/Main.da <Config file name>    <Olympus Node Ip>
