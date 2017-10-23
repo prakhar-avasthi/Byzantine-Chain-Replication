@@ -83,7 +83,6 @@ class Olympus(process):
                     self.replica_failure_map[str(failure_replica)][str(failure_type).strip()] = (source.strip(),(client_id, message_number))
                 except KeyError:
                     self.replica_failure_map[str(failure_replica).strip()] = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
-            output("#######################", replica_failure_map, "######################")
 
 class Replica(process):
     def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
