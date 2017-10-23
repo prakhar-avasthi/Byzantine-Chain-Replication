@@ -12,9 +12,10 @@
 ## INSTRUCTIONS.
 1. Install Python3
 2. Install Distalgo: "sudo pip3 install pyDistAlgo"
-3. Open tow terminal in ubuntu
-4. run command on Terminal 1: "python3 -m da -F info -f -n ClientNode Main.da"
-5. run command on Terminal 2: "python3 -m da -F info -f -n OlympusNode -D Main.da"
+3. Install PyNacl: "sudo pip3 install pynacl"
+3. Open two terminal in ubuntu
+4. run command on Terminal 1(Client Node): "python3 -m da -F info -f --message-buffer-size 50000 -n ClientNode src/Main.da config/test-case.txt"
+5. run command on Terminal 2 (Olympus Node): "python3 -m da -F info -f --message-buffer-size 50000 -n OlympusNode -D src/Main.da config/test-case.txt"
 
 
 ## WORKLOAD GENERATION.
@@ -49,6 +50,7 @@
      - Implemented Retransmitted request sequence at Head Node.
      - Implemented dictionary validation after end of test case.
      - Ran the program on multiple hosts.
+     - Written README.md
 
 2. Rajat Jain (@github/jainraj91)
    - **Responsibilities:**
@@ -77,13 +79,13 @@
 ## CODE SIZE.
    - **Lines of Code(LOC)** 
     Github is used to obtain the LOC.
-     - Algorithm:  
-     - Other: 
-     - Total: 780 Loc
+     - Algorithm: 310 LOC
+     - Other: 470 LOC
+     - Total: 780 LOC
    
    - **Estimates**
-     - Algorithm - 
-     - Other functionality interleaved - 
+     - Algorithm - 60% (186 LOC)
+     - Other functionality interleaved - 40% (124 LOC) 
 
 
 ## LANGUAGE FEATURE USAGE. 
