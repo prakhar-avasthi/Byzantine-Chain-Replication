@@ -22,6 +22,15 @@ class Olympus(process):
         output("[Olympus:]>> res_get_current_configuration")
         send(('res_get_current_configuration', self.config, self.replica_public_keys), to=client)
 
+    def receive(msg = ('req_re_configuration', config_id)):
+        output("[Olympus:]<< req_re_configuration")
+        if config_id == self.config.config_id:
+            end(self.config.list_replica)
+            makeNewConfiguration()
+            output("[Olympus:]New Configuration: ", self.config.config_id)
+        else:
+            output("[Olympus:]Reconfig request from old configuration, ignoring!")
+
     def makeNewConfiguration():
         output("[Olympus:] Making New Configuration")
         if self.config.config_id is None:
@@ -47,12 +56,13 @@ class Olympus(process):
         for replica in replicaList:
             failure_map = replica_failure_map[str(i)] if str(i) in self.replica_failure_map else {}
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
             elif i is num_replica-1:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             i += 1
+            output(replica)
 
         self.config.list_replica = list(replicaList)
         self.replica_public_keys = public_keys
@@ -85,7 +95,7 @@ class Olympus(process):
                     self.replica_failure_map[str(failure_replica).strip()] = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
 
 class Replica(process):
-    def setup(olympus, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
+    def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
         self.forwarded_request = {}
         self.current_slot_id = {}
         self.shuttle_request = {}
@@ -212,9 +222,9 @@ class Replica(process):
         is_valid = validate_order_proof(action,order_proof)
 
         if not is_valid:
-            output("[Replica",self.index,":] Invalid Order Proof, State Immutable, Nofity Wedge to Olympus")
+            output("[Replica",self.index,":] Invalid Order Proof, Sending Reconfig request. Become Immutable")
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
+            send(('req_re_configuration', config_id), to = olympus)
 
         ### normal replica will add its order and result statement
         ### in shuttle and forward to  next Replica
@@ -344,9 +354,9 @@ class Replica(process):
             ## if not valid, enter into IMMUTABLE state
             ## else add it into its history and send to previous replica
             if not is_valid:
-                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Nofitying Wedge to Olympus")
+                output("Replica",self.index,":>> Result proof doesnot verify, State changed to Immutable, Reconfig Request to Olympus")
                 self.state = 'IMMUTABLE'
-                send(('wedged', self, self.index, self.database), to = olympus)
+                send(('req_re_configuration', config_id), to = olympus)
             else:
                 self.history[action] = (result_shuttle, result)
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
@@ -361,7 +371,8 @@ class Replica(process):
         ###### If result proof is invalid, become immutable ######
         if not is_valid:
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
+            ## Reconfig
+            send(('req_re_configuration', config_id), to = olympus)
 
         ##### if result proof is valid, add in history ######
         if is_valid  and state == 'ACTIVE':
@@ -552,7 +563,6 @@ class Replica(process):
                 if(unsigned_result_statement.result != result):
                     return False
             except Exception:
-                output("[Replica",self.index,":] Invalid Result Proof, Become Immutable, send Wedge to Olympus")
                 return False
         return True
 
@@ -567,7 +577,6 @@ class Replica(process):
                     output("[Replica",self.index,":] Result doesnot match so returning false")
                     return False
             except KeyError:
-                output("[Replica",self.index,":] Invalid Order Proof, Become Immutable, send Wedge to Olympus")
                 return False
         return True
 
