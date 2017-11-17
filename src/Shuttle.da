@@ -3,4 +3,5 @@ class Shuttle:
       self.action = None
       self.order_proof = None
       self.result_proof = None
+      self.check_point_proof = None
       self.result = None

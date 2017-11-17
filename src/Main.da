@@ -47,11 +47,11 @@ class Olympus(process):
         for replica in replicaList:
             failure_map = replica_failure_map[str(i)] if str(i) in self.replica_failure_map else {}
             if i is 0:
-                setup(replica, args=(self, list(replicaList), i, 'head', dict(), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, list(replicaList), i, 'head', dict(), [], public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
             elif i is num_replica-1:
-                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, list(replicaList), i, 'tail', dict(), [], public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             else:
-                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, list(replicaList), i, 'normal_replica', dict(), [],  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             i += 1
 
         self.config.list_replica = list(replicaList)
@@ -146,6 +146,7 @@ class Replica(process):
         if self.type == 'head' and state == 'ACTIVE':
             output("[Replica",self.index,":]<< req_operation: ", operation.toString(), " Client: ", client_index)
 
+            check_point_time = False
             #### assign slot number ######
             try:
                 self.current_slot_id[client_index] += 1
@@ -348,7 +349,7 @@ class Replica(process):
                 self.state = 'IMMUTABLE'
                 send(('wedged', self, self.index, self.database), to = olympus)
             else:
-                self.history[action] = (result_shuttle, result)
+                self.history.append(((action, result), result_shuttle))
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = self.replicaList[index - 1])
 
@@ -366,7 +367,7 @@ class Replica(process):
         ##### if result proof is valid, add in history ######
         if is_valid  and state == 'ACTIVE':
             action = result_shuttle.action
-            self.history[action] = (result_shuttle, result)
+            self.history.append(((action, result), result_shuttle))
 
             ##### Kill any running timer ######
             if action.operation.client_request_id in self.waiting_for_result:
@@ -416,6 +417,122 @@ class Replica(process):
                 ## send the shuttle to next replica
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
+            else :
+                #### Create check point shuttle after every 10 sequence #####
+                if result_shuttle.action.seq_id % 10 == 0 :
+                    class_check_point_statement = import_da('CheckPointStatement')
+                    check_point_statement = class_check_point_statement.CheckPointStatement()
+                    check_point_statement.check_point_const = "checkpoint"
+                    check_point_statement.running_state = {}
+                    check_point_statement.running_state = insert_entries(self.index)
+
+                    ##### Crypto hash of check point running state ######
+                    running_state_digest = calculate_running_state_digest(check_point_statement.running_state)
+                    check_point_statement.running_state = running_state_digest
+
+                    #### Sign Check Point Statement and add to checkpoint proof ####
+                    signed_check_point_statement = self.private_key.sign(pickle.dumps(check_point_statement))
+                    check_point_proof = []
+                    check_point_proof.append(signed_check_point_statement)
+
+                    ###### Create check point shuttle and send ######
+                    class_shuttle = import_da('Shuttle')
+                    check_point_shuttle = class_shuttle.Shuttle()
+                    check_point_shuttle.check_point_proof = check_point_proof
+                    output("[Replica",self.index,":]>> Sending Check Point Shuttle: to Replica: ", index+1)
+                    send(('check_point_shuttle', self, check_point_shuttle, result_shuttle.action.seq_id), to = replicaList[index + 1])
+
+    def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
+
+        output("[Replica",self.index,"]: Received check point shuttle")
+        running_state = insert_entries(self.index)
+
+        ##### Crypto hash of check point running state ######
+        running_state_digest = calculate_running_state_digest(running_state)
+
+        ##### validate check point proof #######
+        is_valid = validate_check_point_proof(check_point_shuttle.check_point_proof, running_state_digest)
+
+        if not is_valid:
+            output("[Replica",self.index,":] Invalid CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            self.state = 'IMMUTABLE'
+            send(('wedged', self, self.index, self.database), to = olympus)
+
+
+        output("[Replica",self.index,"]: Check point shuttle verified")
+        verify_key = self.private_key.verify_key
+
+        #### Create check point shuttle #####
+        class_check_point_statement = import_da('CheckPointStatement')
+        check_point_statement = class_check_point_statement.CheckPointStatement()
+        check_point_statement.check_point_const = "checkpoint"
+        check_point_statement.running_state = insert_entries(self.index)
+
+        ##### Crypto hash of check point running state ######
+        running_state_digest = calculate_running_state_digest(check_point_statement.running_state)
+        check_point_statement.running_state = running_state_digest
+
+        #### Sign Check Point Statement and add to checkpoint proof ####
+        signed_check_point_statement = self.private_key.sign(pickle.dumps(check_point_statement))
+
+        ### normal replica will add its check point statement ###
+        if type == 'normal_replica' and state == 'ACTIVE':
+
+            check_point_proof = check_point_shuttle.check_point_proof
+            check_point_proof.append(signed_check_point_statement)
+
+            ######## Forward Check Point Shuttle #######
+            output("[Replica",self.index,":]>> Check Point Shuttle: to Replica: ", index+1)
+            send(('check_point_shuttle', self, check_point_shuttle, check_point_upto), to = self.replicaList[index + 1])
+
+
+        ## If replica is a tail node, it will create a result shuttle
+        if type == 'tail' and state == 'ACTIVE':
+
+            check_point_proof = check_point_shuttle.check_point_proof
+            check_point_proof.append(signed_check_point_statement)
+
+            ###### Create check point shuttle and send ######
+            class_shuttle = import_da('Shuttle')
+            completed_check_point_shuttle = class_shuttle.Shuttle()
+            completed_check_point_shuttle.check_point_proof = check_point_proof
+
+            ##### Remove entries from its history upto the check point ####
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
+            self.history = self.history[check_point_upto:]
+
+            ######## Send Completed Check Point Shuttle #######
+            output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
+            send(('completed_check_point_shuttle', self, completed_check_point_shuttle, check_point_upto), to = replicaList[self.index - 1])
+
+    def receive(msg = ('completed_check_point_shuttle', replica, completed_check_point_shuttle, check_point_upto)):
+
+        output("[Replica",self.index,"]: Received completed check point shuttle")
+        running_state = insert_entries(self.index)
+
+        ##### Crypto hash of check point running state ######
+        running_state_digest = calculate_running_state_digest(running_state)
+
+        ##### validate completed check point proof #######
+        is_valid = validate_check_point_proof(completed_check_point_shuttle.check_point_proof, running_state_digest)
+
+        if not is_valid:
+            output("[Replica",self.index,":] Invalid Completed CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            self.state = 'IMMUTABLE'
+            send(('wedged', self, self.index, self.database), to = olympus)
+        else:
+
+            output("[Replica",self.index,"]: Completed Check point shuttle verified")
+            ##### Remove entries from its history upto the check point ####
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
+            self.history = self.history[check_point_upto:]
+
+            ######## Send Completed Check Point Shuttle #######
+            if not type == 'head' and state == 'ACTIVE':
+                output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
+                send(('completed_check_point_shuttle', self, completed_check_point_shuttle, check_point_upto), to = replicaList[self.index - 1])
+
+
 
     def receive(msg = ('req_operation_timeout', operation, source, client, client_index)):
         if self.state == 'ACTIVE':
@@ -423,11 +540,11 @@ class Replica(process):
                 output("[Replica",self.index,":]<< req_operation_timeout: ", operation.toString(), " Client: ", client_index)
             else:
                 output("[Replica",self.index,":]<< req_operation_timeout: ", operation.toString(), " from Replica[no history], Client: ", client_index)
-            (found_in_history, action) = foundInHistory(operation)
+            (found_in_history, value) = foundInHistory(operation)
 
             if found_in_history == True:
                 try:
-                    (result_shuttle, result) = self.history[action]
+                    (result_shuttle, result) = value
                 except Exception:
                     output("[Replica",self.index,":] Not in History: ", operation.toString())
 
@@ -493,12 +610,12 @@ class Replica(process):
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
 
     def foundInHistory(operation):
-        for action in self.history.keys():
+        for ((action, result), result_shuttle) in self.history:
             if action.operation.client_request_id == operation.client_request_id and\
                 action.operation.command == operation.command and\
                 action.operation.client_seq_id == operation.client_seq_id and\
                 action.operation.type == operation.type:
-                    return (True, action)
+                    return (True, (result_shuttle, result))
         return (False, None)
 
     def is_failure_change_operation(type, client, message):
@@ -544,6 +661,12 @@ class Replica(process):
         result_digest = HASHER(result_byte, encoder=nacl.encoding.HexEncoder)
         return result_digest
 
+    def calculate_running_state_digest(running_state):
+        HASHER = nacl.hash.sha256
+        running_state_byte = pickle.dumps(running_state)
+        running_state_digest = HASHER(running_state_byte, encoder=nacl.encoding.HexEncoder)
+        return running_state_digest
+
     def validate_result_proof(result, result_proof):
         for i in range(len(result_proof)):
             verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
@@ -553,6 +676,19 @@ class Replica(process):
                     return False
             except Exception:
                 output("[Replica",self.index,":] Invalid Result Proof, Become Immutable, send Wedge to Olympus")
+                return False
+        return True
+
+    def validate_check_point_proof(check_point_proof, running_state):
+        for i in range(len(check_point_proof)):
+            verify_key = nacl.signing.VerifyKey(public_keys[i], encoder=nacl.encoding.HexEncoder)
+            try:
+                unsigned_check_point_statement = pickle.loads(verify_key.verify(check_point_proof[i]))
+                if(unsigned_check_point_statement.running_state != running_state):
+                    output("###########", unsigned_check_point_statement.running_state, "#############", running_state)
+                    return False
+            except Exception:
+                output("[Replica",self.index,":] Invalid Check Point Proof, Become Immutable, send Wedge to Olympus")
                 return False
         return True
 
@@ -570,6 +706,19 @@ class Replica(process):
                 output("[Replica",self.index,":] Invalid Order Proof, Become Immutable, send Wedge to Olympus")
                 return False
         return True
+
+    def insert_entries(index) :
+        running_state = []
+
+        for i in range(10) :
+
+            result_statement = self.history[i][1].result_proof[index]
+            verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
+            unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
+
+            running_state.append((unsigned_result_statement.action.seq_id, unsigned_result_statement.result))
+            i += 1
+        return running_state
 
 def main():
     test_case = sys.argv[1]
