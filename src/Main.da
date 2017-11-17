@@ -448,7 +448,7 @@ class Replica(process):
                 if result_shuttle.action.seq_id % 10 == 0 :
                     class_check_point_statement = import_da('CheckPointStatement')
                     check_point_statement = class_check_point_statement.CheckPointStatement()
-                    check_point_statement.check_point_const = "checkpoint"
+                    check_point_statement.check_point_upto = result_shuttle.action.seq_id
                     check_point_statement.running_state = {}
                     check_point_statement.running_state = insert_entries(self.index)
 
@@ -491,7 +491,7 @@ class Replica(process):
         #### Create check point shuttle #####
         class_check_point_statement = import_da('CheckPointStatement')
         check_point_statement = class_check_point_statement.CheckPointStatement()
-        check_point_statement.check_point_const = "checkpoint"
+        check_point_statement.check_point_upto = check_point_upto
         check_point_statement.running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######

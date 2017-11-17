@@ -1,0 +1,4 @@
+class CheckPointStatement:
+    def __init__(self):
+      self.check_point_upto = None
+      self.running_state = None
