@@ -19,7 +19,7 @@ class Olympus(process):
     def receive(msg = ('req_get_current_configuration', client)):
         output("[Olympus:]<< req_get_current_configuration")
         if self.config.config_id is None:
-            makeNewConfiguration({})
+            makeNewConfiguration({}, {})
 
         output("[Olympus:]>> res_get_current_configuration")
         send(('res_get_current_configuration', self.config, self.replica_public_keys), to=client)
@@ -38,17 +38,16 @@ class Olympus(process):
         else:
             output("[Olympus:]Reconfig request from old configuration, ignoring!")
 
-    def receive(msg = ('wedged', database, replica_id)):
+    def receive(msg = ('wedged', database, history, replica_id)):
         output("[Olympus:]<< wegded from Replica: ", replica_id)
         self.num_wedged_message += 1
-        self.wedged_data[replica_id] = database
+        self.wedged_data[replica_id] = (database, history)
         output("Total received: ", self.num_wedged_message)
         if(self.num_wedged_message == len(self.config.list_replica)):
-            for i in range(len(self.config.list_replica)):
-                output("Replica: ", i , " : data: ", self.wedged_data[i])
-            makeNewConfiguration(self.wedged_data[0])
+            database, history = self.wedged_data[0]
+            makeNewConfiguration(database, history)
 
-    def makeNewConfiguration(database):
+    def makeNewConfiguration(database, history):
         output("[Olympus:] Making New Configuration")
         if self.config.config_id is None:
             self.config.config_id = 1
@@ -73,13 +72,12 @@ class Olympus(process):
         for replica in replicaList:
             failure_map = replica_failure_map[str(i)] if str(i) in self.replica_failure_map else {}
             if i is 0:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), dict(), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), dict(history), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
             elif i is num_replica-1:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(database), dict(), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(database), dict(history), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             else:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica', dict(database), dict(),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica', dict(database), dict(history),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             i += 1
-            output(replica)
 
         self.config.list_replica = list(replicaList)
         self.replica_public_keys = public_keys
@@ -533,7 +531,7 @@ class Replica(process):
         output("[Replica",self.index,":]<< wedge")
         self.state = 'IMMUTABLE'
         output("[Replica",self.index,":]>> wedged")
-        send(('wedged', database, index), to = olympus)
+        send(('wedged', database, history, index), to = olympus)
 
     def foundInHistory(operation):
         for action in self.history.keys():
