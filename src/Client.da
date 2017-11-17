@@ -156,8 +156,10 @@ class Client(process):
             else:
                 output("[Client",index,":] Invalid Result, Request Reconfiguration")
         else:
-            output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request Reconfiguration")
+            output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request  new configuration")
             self.error_in_replica += 1
+            send(('req_get_current_configuration', self), to=olympus)
+            --newconfig_reply
 
     def resultValidation():
         output("[Client",index,":] Test case completed! Validating Result")
