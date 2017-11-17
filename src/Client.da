@@ -68,6 +68,7 @@ class Client(process):
         await(some(received(('terminate_client'))))
 
     def receive (msg= ('res_get_current_configuration', config, replica_public_keys)):
+        output("[Client",self.index,":]<< res_get_current_configuration")
         self.config = config
         self.replica_public_keys = replica_public_keys
 
@@ -77,7 +78,7 @@ class Client(process):
         command_and_state[1] = 101          ## State 101 -> in progress
 
         ##### Sending operation to HeadNode ###
-        output("[Client",index,":]>> req_operation: ", operation.toString())
+        output("[Client",index,":]>> req_operation: ", operation.toString(), " : config: ", self.config.config_id)
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         self.wait_for_result = 1
@@ -92,10 +93,15 @@ class Client(process):
                     resend_operation = makeOperation(key, val[0])
                     i = 0;
                     for replica in self.config.list_replica:
-                        output("[Client",index,":]>> req_operation_timeout: Replica: ",i, operation.toString())
+                        output("[Client",index,":]>> req_operation_timeout: Replica: ",i, operation.toString(), " : config: ", self.config.config_id)
                         send(('req_operation_timeout', resend_operation, "client", self, self.index), to=replica)
                         i += 1
-                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0): pass
+                    --timeout_req
+                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > len(self.config.list_replica)-1):
+                        output("[Client",index,":]>> error_in_replica: ", self.error_in_replica)
+                        if(self.error_in_replica == len(self.config.list_replica)):
+                            output("[Client",index,":]>> Sending to new config ")
+                            sendOperation(key)
                     elif timeout(timeout):
                         output("[Client",index,":] Not received from Quoram, Terminate System.")
 
@@ -156,8 +162,12 @@ class Client(process):
             else:
                 output("[Client",index,":] Invalid Result, Request Reconfiguration")
         else:
-            output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request Reconfiguration")
+            output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request  new configuration")
             self.error_in_replica += 1
+            output("[Client",self.index,":]>> req_get_current_configuration")
+            send(('req_get_current_configuration', self), to=olympus)
+            --newconfig_reply
+            output("########## here")
 
     def resultValidation():
         output("[Client",index,":] Test case completed! Validating Result")
