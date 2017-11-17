@@ -505,6 +505,8 @@ class Replica(process):
                 elif timeout(self.timeout):
                     output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                     self.waiting_for_result[operation.client_request_id] = (0, None)
+                    self.state = 'IMMUTABLE'
+                    send(('req_re_configuration', config_id), to = olympus)
 
             elif found_in_history == False and self.type == 'head':
                 try:
@@ -520,6 +522,8 @@ class Replica(process):
                         elif timeout(self.timeout):
                             output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
                             self.waiting_for_result[operation.client_request_id] = (0, None)
+                            self.state = 'IMMUTABLE'
+                            send(('req_re_configuration', config_id), to = olympus)
                 except:
                     output("########### FIXED")
                     send(('req_operation', operation, client, client.index), to=self)
