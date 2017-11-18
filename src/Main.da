@@ -11,6 +11,7 @@ class Olympus(process):
         self.replica_failure_map = {}
         self.num_wedged_message = 0
         self.wedged_data = {}
+        self.max_checkpoint = {}
 
     def run():
         output("[Olympus:] Started")
@@ -38,13 +39,25 @@ class Olympus(process):
         else:
             output("[Olympus:]Reconfig request from old configuration, ignoring!")
 
-    def receive(msg = ('wedged', database, history, replica_id)):
+    def receive(msg = ('wedged', database, history, checkpoint_proof, checkpoint_position, replica_id)):
         output("[Olympus:]<< wegded from Replica: ", replica_id)
+        ##[TODO] check validation of checkpoint proof
+        try:
+            self.max_checkpoint[checkpoint_position] += 1
+        except:
+            self.max_checkpoint[checkpoint_position] = 1
         self.num_wedged_message += 1
-        self.wedged_data[replica_id] = (database, history)
+        self.wedged_data[replica_id] = (checkpoint_position, database, history)
         output("Total received: ", self.num_wedged_message)
         if(self.num_wedged_message == len(self.config.list_replica)):
-            database, history = self.wedged_data[0]
+            max = -1
+            checkpoint_pos = -1
+            for key in self.max_checkpoint:
+                if self.max_checkpoint[key] > max:
+                    max = self.max_checkpoint[key]
+                    checkpoint_pos = key
+
+            print("#### MAX: ", checkpoint_pos)
             makeNewConfiguration(database, history)
 
     def makeNewConfiguration(database, history):
@@ -112,11 +125,14 @@ class Olympus(process):
 class Replica(process):
     def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
         self.forwarded_request = {}
-        self.current_slot_id = {}
         self.shuttle_request = {}
         self.direct_client_request = {}
         self.result_shuttle_request = {}
         self.waiting_for_result = {}
+        self.checkpoint_proof = None
+        self.checkpoint_position = None
+        self.replica_slot = 0
+        self.current_slot_id = {}
 
     def run():
         self.state = 'ACTIVE'
@@ -175,12 +191,13 @@ class Replica(process):
             #### assign slot number ######
             try:
                 self.current_slot_id[client_index] += 1
+                self.replica_slot += 1
             except KeyError:
                 self.current_slot_id[client_index] = 1
-
             ######### Create action ###########
             class_action = import_da('Action')
             action = class_action.Action()
+            action.replica_slot = self.replica_slot
             action.seq_id = self.current_slot_id[client_index]
             action.operation = operation
             order_proof = []
@@ -444,11 +461,11 @@ class Replica(process):
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
             else :
-                #### Create check point shuttle after every 10 sequence #####
-                if result_shuttle.action.seq_id % 10 == 0 :
+                #### Create check point shuttle after every 4 sequence #####
+                if result_shuttle.action.replica_slot % 4 == 0 :
                     class_check_point_statement = import_da('CheckPointStatement')
                     check_point_statement = class_check_point_statement.CheckPointStatement()
-                    check_point_statement.check_point_upto = result_shuttle.action.seq_id
+                    check_point_statement.check_point_upto = result_shuttle.action.replica_slot
                     check_point_statement.running_state = {}
                     check_point_statement.running_state = insert_entries(self.index)
 
@@ -466,7 +483,7 @@ class Replica(process):
                     check_point_shuttle = class_shuttle.Shuttle()
                     check_point_shuttle.check_point_proof = check_point_proof
                     output("[Replica",self.index,":]>> Sending Check Point Shuttle: to Replica: ", index+1)
-                    send(('check_point_shuttle', self, check_point_shuttle, result_shuttle.action.seq_id), to = replicaList[index + 1])
+                    send(('check_point_shuttle', self, check_point_shuttle, result_shuttle.action.replica_slot), to = replicaList[index + 1])
 
     def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
 
@@ -480,10 +497,9 @@ class Replica(process):
         is_valid = validate_check_point_proof(check_point_shuttle.check_point_proof, running_state_digest)
 
         if not is_valid:
-            output("[Replica",self.index,":] Invalid CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            output("[Replica",self.index,":] Invalid CheckPoint Proof, State Immutable, Reconfig to Olympus")
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
-
+            send(('req_re_configuration', config_id), to = olympus)
 
         output("[Replica",self.index,"]: Check point shuttle verified")
         verify_key = self.private_key.verify_key
@@ -526,6 +542,8 @@ class Replica(process):
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
             self.history = self.history[check_point_upto:]
+            self.checkpoint_position = check_point_statement.check_point_upto
+            self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
             ######## Send Completed Check Point Shuttle #######
             output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
@@ -543,22 +561,22 @@ class Replica(process):
         is_valid = validate_check_point_proof(completed_check_point_shuttle.check_point_proof, running_state_digest)
 
         if not is_valid:
-            output("[Replica",self.index,":] Invalid Completed CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            output("[Replica",self.index,":] Invalid Completed CheckPoint Proof, State Immutable, Reconfig to Olympus")
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
+            send(('req_re_configuration', config_id), to = olympus)
         else:
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
             self.history = self.history[check_point_upto:]
+            self.checkpoint_position = check_point_upto
+            self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
             ######## Send Completed Check Point Shuttle #######
             if not type == 'head' and state == 'ACTIVE':
                 output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
                 send(('completed_check_point_shuttle', self, completed_check_point_shuttle, check_point_upto), to = replicaList[self.index - 1])
-
-
 
     def receive(msg = ('req_operation_timeout', operation, source, client, client_index)):
         if self.state == 'ACTIVE':
@@ -633,8 +651,8 @@ class Replica(process):
                     else:
                         try:
                             self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
-                        except:
-                            output("###### BUG")
+                        except:pass
+
                         if await(self.waiting_for_result[operation.client_request_id][0]== 0): pass
                         elif timeout(self.timeout):
                             output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
@@ -642,7 +660,6 @@ class Replica(process):
                             self.state = 'IMMUTABLE'
                             send(('req_re_configuration', config_id), to = olympus)
                 except:
-                    output("########### FIXED")
                     send(('req_operation', operation, client, client.index), to=self)
 
         elif self.state == 'IMMUTABLE':
@@ -652,7 +669,7 @@ class Replica(process):
         output("[Replica",self.index,":]<< wedge")
         self.state = 'IMMUTABLE'
         output("[Replica",self.index,":]>> wedged")
-        send(('wedged', database, history, index), to = olympus)
+        send(('wedged', database, history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
 
     def foundInHistory(operation):
         for ((action, result), result_shuttle) in self.history:
@@ -692,6 +709,7 @@ class Replica(process):
         class_action = import_da('Action')
         temp_action = class_action.Action()
 
+        temp_action.replica_slot = action.replica_slot
         temp_action.seq_id = action.seq_id
         temp_action.operation = action.operation
         temp_action.operation.type = 2
@@ -752,15 +770,11 @@ class Replica(process):
 
     def insert_entries(index) :
         running_state = []
-
-        for i in range(10) :
-
+        for i in range(4) :
             result_statement = self.history[i][1].result_proof[index]
             verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
             unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
-
-            running_state.append((unsigned_result_statement.action.seq_id, unsigned_result_statement.result))
-            i += 1
+            running_state.append((unsigned_result_statement.action.replica_slot, unsigned_result_statement.result))
         return running_state
 
 def main():

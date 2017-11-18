@@ -1,4 +1,5 @@
 class Action:
     def __init__(self):
-      self.seq_id = None
-      self.operation = None
+        self.replica_slot = None
+        self.seq_id = None
+        self.operation = None
