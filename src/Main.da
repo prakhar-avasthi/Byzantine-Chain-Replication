@@ -11,6 +11,7 @@ class Olympus(process):
         self.replica_failure_map = {}
         self.num_wedged_message = 0
         self.wedged_data = {}
+        self.completed_check_point_count = 0
 
     def run():
         output("[Olympus:] Started")
@@ -100,7 +101,13 @@ class Olympus(process):
             for failure_type in failures_injected:
                 failure_row = re.findall(r'(?:[^,(]|\([^)]*\))+', failure_type)
                 matches = re.findall(r"\((.+?)\)", failure_row[0])
-                client_id, message_number = matches[0].split(",")
+                to_match = matches[0].split(",")
+                client_id = -1
+                message_mumber = 0
+                if(len(to_match) > 1) :
+                    client_id, message_number = matches[0].split(",")
+                elif(len(to_match) == 1):
+                    message_number = to_match[0]
                 source = failure_row[0].split("(")[0]
                 failure_type = failure_row[1]
 
@@ -534,6 +541,7 @@ class Replica(process):
     def receive(msg = ('completed_check_point_shuttle', replica, completed_check_point_shuttle, check_point_upto)):
 
         output("[Replica",self.index,"]: Received completed check point shuttle")
+        self.completed_check_point_count += 1
         running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######
@@ -549,6 +557,9 @@ class Replica(process):
         else:
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
+
+            if is_failure_drop_check_pt_stmt(self.completed_check_point_count)
+
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
             self.history = self.history[check_point_upto:]
@@ -687,6 +698,39 @@ class Replica(process):
         except KeyError:
             return False
 
+    def is_failure_drop_check_pt_stmt(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["drop_checkpt_stmts()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_invalid_result_sig(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["invalid_result_sig()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_invalid_order_sig(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["invalid_order_sig()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
+        except KeyError:
+            return False
+
+    def is_failure_sleep(type, client, message) :
+        try:
+            for key in fault_map:
+                if 'sleep' in key:
+                    return True
+            return False
+        except KeyError:
+            return False
+
     def change_operation(action, order_statement) :
         output("[Replica",self.index,":] !!!!!! Changing operation from ", action.operation.command , " to get('X') !!!!!!!")
         class_action = import_da('Action')
@@ -699,6 +743,24 @@ class Replica(process):
 
         order_statement.action = temp_action
         return order_statement
+
+    def crash() :
+        import os
+        os._exit(-1)
+
+    def truncate_history(history):
+        return history[0 : len(history) - 1]
+
+    def sleep(timer):
+        import time
+        time.sleep(timer)
+
+    def invalid_sign(sig) :
+        signedlist = list(sig)
+        signedlist[0] = (signedlist[0] + 1) % 256
+        newsigned = bytes(signedlist)
+        invalid_signed = nacl.signing.SignedMessage._from_parts(signed._signature, signed._message, newsigned)
+        return invalid_signed
 
     def calculate_result_digest(result):
         HASHER = nacl.hash.sha256
