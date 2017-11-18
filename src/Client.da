@@ -104,6 +104,13 @@ class Client(process):
                             sendOperation(key)
                     elif timeout(timeout):
                         output("[Client",index,":] Not received from Quoram, Terminate System.")
+                        self.config = None
+                        output("[Client",self.index,":]>> req_get_current_configuration")
+                        send(('req_get_current_configuration', self), to=olympus)
+                        await(self.config != None)
+                        output("[Client",index,":]>> Sending to new config ")
+                        sendOperation(key)
+
 
     def makeOperation(seq_id, command):
         command = command.strip()

@@ -10,8 +10,15 @@ class Olympus(process):
         self.replica_public_keys = []
         self.replica_failure_map = {}
         self.num_wedged_message = 0
+        self.num_caughtup_message = 0
         self.wedged_data = {}
+<<<<<<< HEAD
         self.completed_check_point_count = 0
+=======
+        self.max_checkpoint = {}
+        self.longest_history = None
+        self.longest_database = None
+>>>>>>> 297d67cecc725a096ac107344b7c8b237da405c3
 
     def run():
         output("[Olympus:] Started")
@@ -39,14 +46,61 @@ class Olympus(process):
         else:
             output("[Olympus:]Reconfig request from old configuration, ignoring!")
 
-    def receive(msg = ('wedged', database, history, replica_id)):
-        output("[Olympus:]<< wegded from Replica: ", replica_id)
+    def receive(msg = ('wedged', database, history, checkpoint_proof, checkpoint_position, replica_id)):
+        output("[Olympus:]<< wegded from Replica: ", replica_id, " : History length: ", len(history), " : ChkPoint", checkpoint_position)
+        ##[TODO] check validation of checkpoint proof
+        try:
+            self.max_checkpoint[checkpoint_position] += 1
+        except:
+            self.max_checkpoint[checkpoint_position] = 1
+
         self.num_wedged_message += 1
-        self.wedged_data[replica_id] = (database, history)
-        output("Total received: ", self.num_wedged_message)
+        self.wedged_data[replica_id] = (checkpoint_position, database, history)
+        output("[Olympus:] Total received: ", self.num_wedged_message)
+
         if(self.num_wedged_message == len(self.config.list_replica)):
-            database, history = self.wedged_data[0]
-            makeNewConfiguration(database, history)
+            self.num_wedged_message = 0
+            max = -1
+            for key in self.wedged_data:
+                val = self.wedged_data[key]
+                if len(val[2]) > max:
+                    max = len(val[2])
+                    self.longest_history = val[2]
+                    self.longest_database = val[1]
+
+            output("[Olympus:] Longest History")
+            for i in range(len(self.longest_history)):
+                ((action, result), proof) = self.longest_history[i]
+                output("[Olympus:] Longest History: Slot: ", action.replica_slot, ", Operation: ", action.operation.toString())
+
+            output("[Olympus:] Longest Database: ", self.longest_database)
+
+            for i in range(len(self.config.list_replica)):
+                (pos, db, hist) = self.wedged_data[i]
+                catch_up_history = calculateCatchUpHistory(i, self.longest_history, hist)
+                send(('catch-up', catch_up_history), to = self.config.list_replica[i])
+
+    def receive(msg = ('caught-up', database, replica_id)):
+        output("[Olympus:]<< caught-up from Replica: ", replica_id, " : database: ", database)
+        self.num_caughtup_message += 1
+        if(self.num_caughtup_message == len(self.config.list_replica)):
+            makeNewConfiguration(self.longest_database, self.longest_history)
+
+    def calculateCatchUpHistory(replica_id, longest_history, own_history):
+        catch_up_history = []
+        for i in range(len(self.longest_history)):
+            record = self.longest_history[i]
+            if not presentInHistory(replica_id, record, own_history):
+                catch_up_history.append(record)
+        return catch_up_history
+
+    def presentInHistory(id, record, own_history):
+        ((record_action, record_result), record_proof) = record
+        for i in range(len(own_history)):
+            ((action, result), proof) = own_history[i]
+            if action.replica_slot == record_action.replica_slot:
+                return True
+        return False
 
     def makeNewConfiguration(database, history):
         output("[Olympus:] Making New Configuration")
@@ -119,20 +173,27 @@ class Olympus(process):
 class Replica(process):
     def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
         self.forwarded_request = {}
-        self.current_slot_id = {}
         self.shuttle_request = {}
         self.direct_client_request = {}
         self.result_shuttle_request = {}
         self.waiting_for_result = {}
+        self.checkpoint_proof = None
+        self.checkpoint_position = None
+        self.replica_slot = 0
+        self.current_slot_id = {}
+        self.running_state_log = []
+        self.running_state_log.append((0, dict()))
 
     def run():
         self.state = 'ACTIVE'
-        output("[Replica",self.index,":] Started: ", self.type, self.state)
+        output("[Replica",self.index,":] Started: ", self.type, self.state, self.config_id)
         await(some(received(('terminate_replica'))))
 
-    def performOperation(operation):
+    def performOperation(action):
+        operation = action.operation
         output("[Replica",self.index,":] Perform: ", operation.toString())
         import re
+        import copy
         matches = re.findall(r"\'(.+?)\'", operation.command)
 
         key = None
@@ -146,27 +207,34 @@ class Replica(process):
 
         if operation.type is 1:
             self.database[key] = value
+            self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
             return 'OK'
         elif operation.type is 2:
             if key in self.database:
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return self.database[key]
             else:
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return ''
         elif operation.type is 3:
             limit = value.split(':')
             if key in self.database and len(self.database[key]) >= int(limit[1]):
                 val = self.database[key]
                 self.database[key] = val[int(limit[0]):int(limit[1])]
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return 'OK'
             else:
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return 'FAIL'
         elif operation.type is 4:
             if key in self.database:
                 val = self.database[key]
                 list_val = val+value
                 self.database[key] = list_val
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return 'OK'
             else:
+                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return 'FAIL'
 
     def receive(msg = ('init_hist', replica_list)):
@@ -184,16 +252,18 @@ class Replica(process):
                 self.current_slot_id[client_index] += 1
             except KeyError:
                 self.current_slot_id[client_index] = 1
-
+            self.replica_slot += 1
+            output("Slot: ", self.replica_slot, " : Operation: ", operation.toString())
             ######### Create action ###########
             class_action = import_da('Action')
             action = class_action.Action()
+            action.replica_slot = self.replica_slot
             action.seq_id = self.current_slot_id[client_index]
             action.operation = operation
             order_proof = []
             result_proof = []
 
-            result = performOperation(action.operation)
+            result = performOperation(action)
 
             ###### Create order statement #######
             class_order_statement = import_da('OrderStatement')
@@ -265,7 +335,7 @@ class Replica(process):
                 self.is_failure_change_operation("shuttle",str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Change Operation, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement = self.change_operation(action, order_statement)
-                result = performOperation(order_statement.action.operation)
+                result = performOperation(order_statement.action)
                 output("[Replica",self.index,":] Successfully injected fault: Change operation")
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
@@ -277,13 +347,13 @@ class Replica(process):
                 self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
-                result = performOperation(action.operation)
+                result = performOperation(action)
                 del result_proof[0]
                 output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
-                result = performOperation(action.operation)
+                result = performOperation(action)
 
             ########### Sign order statement, Add to order proof ###########
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
@@ -320,7 +390,7 @@ class Replica(process):
                 self.is_failure_change_operation("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Change operation, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement = self.change_operation(action, order_statement)
-                result = performOperation(order_statement.action.operation)
+                result = performOperation(order_statement.action)
                 output("[Replica",self.index,":] Successfully injected fault: Change operation")
             elif client_index in self.shuttle_request and\
                 self.is_failure_change_result("shuttle", str(client_index), str(self.shuttle_request[client_index])):
@@ -332,13 +402,13 @@ class Replica(process):
                 self.is_failure_drop_result_stmt("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.shuttle_request[client_index])
                 order_statement.action = action
-                result = performOperation(action.operation)
+                result = performOperation(action)
                 del result_proof[0]
                 output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
-                result = performOperation(action.operation)
+                result = performOperation(action)
 
             ##### Sign Order statement, Add to order proof
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
@@ -451,14 +521,16 @@ class Replica(process):
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
             else :
-                #### Create check point shuttle after every 10 sequence #####
-                if result_shuttle.action.seq_id % 10 == 0 :
+                #### Create check point shuttle after every 30 sequence #####
+                if result_shuttle.action.replica_slot % 30 == 0 :
                     class_check_point_statement = import_da('CheckPointStatement')
                     check_point_statement = class_check_point_statement.CheckPointStatement()
-                    check_point_statement.check_point_upto = result_shuttle.action.seq_id
+                    check_point_statement.check_point_upto = result_shuttle.action.replica_slot
                     check_point_statement.running_state = {}
-                    check_point_statement.running_state = insert_entries(self.index)
-
+                    try:
+                        check_point_statement.running_state = insert_entries(self.index)
+                    except TypeError:
+                        output("333333333333333 HERE")
                     ##### Crypto hash of check point running state ######
                     running_state_digest = calculate_running_state_digest(check_point_statement.running_state)
                     check_point_statement.running_state = running_state_digest
@@ -473,11 +545,11 @@ class Replica(process):
                     check_point_shuttle = class_shuttle.Shuttle()
                     check_point_shuttle.check_point_proof = check_point_proof
                     output("[Replica",self.index,":]>> Sending Check Point Shuttle: to Replica: ", index+1)
-                    send(('check_point_shuttle', self, check_point_shuttle, result_shuttle.action.seq_id), to = replicaList[index + 1])
+                    send(('check_point_shuttle', self, check_point_shuttle, result_shuttle.action.replica_slot), to = replicaList[index + 1])
 
     def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
 
-        output("[Replica",self.index,"]: Received check point shuttle")
+        output("[Replica",self.index,"]: Received check point shuttle: ", check_point_upto)
         running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######
@@ -487,10 +559,9 @@ class Replica(process):
         is_valid = validate_check_point_proof(check_point_shuttle.check_point_proof, running_state_digest)
 
         if not is_valid:
-            output("[Replica",self.index,":] Invalid CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            output("[Replica",self.index,":] Invalid CheckPoint Proof, State Immutable, Reconfig to Olympus")
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
-
+            send(('req_re_configuration', config_id), to = olympus)
 
         output("[Replica",self.index,"]: Check point shuttle verified")
         verify_key = self.private_key.verify_key
@@ -531,8 +602,10 @@ class Replica(process):
             completed_check_point_shuttle.check_point_proof = check_point_proof
 
             ##### Remove entries from its history upto the check point ####
-            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
-            self.history = self.history[check_point_upto:]
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
+            self.history = self.history[30:]
+            self.checkpoint_position = check_point_statement.check_point_upto
+            self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
             ######## Send Completed Check Point Shuttle #######
             output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
@@ -551,9 +624,9 @@ class Replica(process):
         is_valid = validate_check_point_proof(completed_check_point_shuttle.check_point_proof, running_state_digest)
 
         if not is_valid:
-            output("[Replica",self.index,":] Invalid Completed CheckPoint Proof, State Immutable, Nofity Wedge to Olympus")
+            output("[Replica",self.index,":] Invalid Completed CheckPoint Proof, State Immutable, Reconfig to Olympus")
             self.state = 'IMMUTABLE'
-            send(('wedged', self, self.index, self.database), to = olympus)
+            send(('req_re_configuration', config_id), to = olympus)
         else:
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
@@ -561,15 +634,16 @@ class Replica(process):
             if is_failure_drop_check_pt_stmt(self.completed_check_point_count)
 
             ##### Remove entries from its history upto the check point ####
-            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
-            self.history = self.history[check_point_upto:]
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
+            self.history = self.history[30:]
+            output("[Replica",self.index,"]: New History :", len(self.history))
+            self.checkpoint_position = check_point_upto
+            self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
             ######## Send Completed Check Point Shuttle #######
             if not type == 'head' and state == 'ACTIVE':
                 output("[Replica",self.index,":]>> Completed Check Point Shuttle: to Replica: ", index - 1)
                 send(('completed_check_point_shuttle', self, completed_check_point_shuttle, check_point_upto), to = replicaList[self.index - 1])
-
-
 
     def receive(msg = ('req_operation_timeout', operation, source, client, client_index)):
         if self.state == 'ACTIVE':
@@ -644,8 +718,8 @@ class Replica(process):
                     else:
                         try:
                             self.waiting_for_result[operation.client_request_id] = (1, operation.client_seq_id)
-                        except:
-                            output("###### BUG")
+                        except:pass
+
                         if await(self.waiting_for_result[operation.client_request_id][0]== 0): pass
                         elif timeout(self.timeout):
                             output("[Replica",self.index,":] Timeout!! Sending Reconfig Request")
@@ -653,17 +727,43 @@ class Replica(process):
                             self.state = 'IMMUTABLE'
                             send(('req_re_configuration', config_id), to = olympus)
                 except:
-                    output("########### FIXED")
                     send(('req_operation', operation, client, client.index), to=self)
 
         elif self.state == 'IMMUTABLE':
+            output("[Replica",self.index,":]<< req_operation_timeout: IMMUTABLE: ", operation.toString(), " Client: ", client_index)
             send(('res_operation_timeout', None, None, None, self, self.index, 'error'), to=client)
 
     def receive(msg = ('wedge')):
         output("[Replica",self.index,":]<< wedge")
         self.state = 'IMMUTABLE'
         output("[Replica",self.index,":]>> wedged")
-        send(('wedged', database, history, index), to = olympus)
+        send(('wedged', database, history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+
+    def receive(msg = ('catch-up', catch_up_history)):
+        output("[Replica",self.index,":]<< catch-up")
+        output("[Replica",self.index,":] catch-up History")
+        for i in range(len(catch_up_history)):
+            ((action, result), proof) = catch_up_history[i]
+            output("[Replica",self.index,":] catch-up History: Slot: ", action.replica_slot, ", operation: ", action.operation.toString())
+
+        if len(catch_up_history) > 0:
+            state = catchUpWithLongestHistory(catch_up_history)
+        else:
+            state = self.running_state_log[len(self.running_state_log)-1]
+        output("[Replica",self.index,":]>> caught-up")
+        send(('caught-up', state[1], self.index), to = olympus)
+
+    def catchUpWithLongestHistory(catch_up_history):
+        #TODO: perform operation with slot number greater than last_state
+        ((action, result), proof) = catch_up_history[len(catch_up_history)-1]
+        state = self.running_state_log[action.replica_slot]
+        output("[Replica",self.index,":]>> catchUpWithLongestHistory: ", state)
+        return state
+        #last_state = self.running_state_log[len(self.running_state_log)-1]
+        #output("[Replica",self.index,":]>> catchUpWithLongestHistory: ", last_state)
+        #for i in range(len(catch_up_history)):
+            #((action, result), proof) = catch_up_history[i]
+            #if(action.replica_slot <= last_state[0])
 
     def foundInHistory(operation):
         for ((action, result), result_shuttle) in self.history:
@@ -736,6 +836,7 @@ class Replica(process):
         class_action = import_da('Action')
         temp_action = class_action.Action()
 
+        temp_action.replica_slot = action.replica_slot
         temp_action.seq_id = action.seq_id
         temp_action.operation = action.operation
         temp_action.operation.type = 2
@@ -814,15 +915,11 @@ class Replica(process):
 
     def insert_entries(index) :
         running_state = []
-
-        for i in range(10) :
-
+        for i in range(30) :
             result_statement = self.history[i][1].result_proof[index]
             verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
             unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
-
-            running_state.append((unsigned_result_statement.action.seq_id, unsigned_result_statement.result))
-            i += 1
+            running_state.append((unsigned_result_statement.action.replica_slot, unsigned_result_statement.result))
         return running_state
 
 def main():
