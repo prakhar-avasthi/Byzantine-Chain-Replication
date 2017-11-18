@@ -12,13 +12,9 @@ class Olympus(process):
         self.num_wedged_message = 0
         self.num_caughtup_message = 0
         self.wedged_data = {}
-<<<<<<< HEAD
-        self.completed_check_point_count = 0
-=======
         self.max_checkpoint = {}
         self.longest_history = None
         self.longest_database = None
->>>>>>> 297d67cecc725a096ac107344b7c8b237da405c3
 
     def run():
         output("[Olympus:] Started")
@@ -180,6 +176,7 @@ class Replica(process):
         self.checkpoint_proof = None
         self.checkpoint_position = None
         self.replica_slot = 0
+        self.completed_check_point_count = 0
         self.current_slot_id = {}
         self.running_state_log = []
         self.running_state_log.append((0, dict()))
@@ -631,7 +628,7 @@ class Replica(process):
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
 
-            if is_failure_drop_check_pt_stmt(self.completed_check_point_count)
+            #if is_failure_drop_check_pt_stmt(self.completed_check_point_count)
 
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
@@ -860,7 +857,7 @@ class Replica(process):
         signedlist = list(sig)
         signedlist[0] = (signedlist[0] + 1) % 256
         newsigned = bytes(signedlist)
-        invalid_signed = nacl.signing.SignedMessage._from_parts(signed._signature, signed._message, newsigned)
+        invalid_signed = nacl.signing.SignedMessage._from_parts(sig._signature, sig._message, newsigned)
         return invalid_signed
 
     def calculate_result_digest(result):
