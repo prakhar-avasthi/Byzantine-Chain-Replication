@@ -42,6 +42,13 @@ class Olympus(process):
     def receive(msg = ('wedged', database, history, checkpoint_proof, checkpoint_position, replica_id)):
         output("[Olympus:]<< wegded from Replica: ", replica_id)
         ##[TODO] check validation of checkpoint proof
+        output("Replica: ", replica_id, " : History length: ", len(history), " : ", checkpoint_position)
+        try:
+            for i in range(len(history)):
+                ((action, result), proof) = history[i]
+                output("Replica: ", replica_id, " : slot: ", action.replica_slot, " : operation: ", action.operation.toString())
+        except: pass
+
         try:
             self.max_checkpoint[checkpoint_position] += 1
         except:
@@ -57,7 +64,7 @@ class Olympus(process):
                     max = self.max_checkpoint[key]
                     checkpoint_pos = key
 
-            print("#### MAX: ", checkpoint_pos)
+            output("#### MAX: ", checkpoint_pos)
             makeNewConfiguration(database, history)
 
     def makeNewConfiguration(database, history):
@@ -191,9 +198,10 @@ class Replica(process):
             #### assign slot number ######
             try:
                 self.current_slot_id[client_index] += 1
-                self.replica_slot += 1
             except KeyError:
                 self.current_slot_id[client_index] = 1
+            self.replica_slot += 1
+            output("Slot: ", self.replica_slot, " : Operation: ", operation.toString())
             ######### Create action ###########
             class_action = import_da('Action')
             action = class_action.Action()
@@ -461,8 +469,8 @@ class Replica(process):
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
             else :
-                #### Create check point shuttle after every 4 sequence #####
-                if result_shuttle.action.replica_slot % 4 == 0 :
+                #### Create check point shuttle after every 30 sequence #####
+                if result_shuttle.action.replica_slot % 30 == 0 :
                     class_check_point_statement = import_da('CheckPointStatement')
                     check_point_statement = class_check_point_statement.CheckPointStatement()
                     check_point_statement.check_point_upto = result_shuttle.action.replica_slot
@@ -487,7 +495,7 @@ class Replica(process):
 
     def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
 
-        output("[Replica",self.index,"]: Received check point shuttle")
+        output("[Replica",self.index,"]: Received check point shuttle: ", check_point_upto)
         running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######
@@ -540,8 +548,8 @@ class Replica(process):
             completed_check_point_shuttle.check_point_proof = check_point_proof
 
             ##### Remove entries from its history upto the check point ####
-            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
-            self.history = self.history[check_point_upto:]
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
+            self.history = self.history[30:]
             self.checkpoint_position = check_point_statement.check_point_upto
             self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
@@ -568,8 +576,9 @@ class Replica(process):
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
             ##### Remove entries from its history upto the check point ####
-            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto)
-            self.history = self.history[check_point_upto:]
+            output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
+            self.history = self.history[30:]
+            output("[Replica",self.index,"]: New History :", len(self.history))
             self.checkpoint_position = check_point_upto
             self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
@@ -770,7 +779,7 @@ class Replica(process):
 
     def insert_entries(index) :
         running_state = []
-        for i in range(4) :
+        for i in range(30) :
             result_statement = self.history[i][1].result_proof[index]
             verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
             unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
