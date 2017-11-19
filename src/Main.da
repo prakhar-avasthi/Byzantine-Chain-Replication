@@ -118,7 +118,6 @@ class Olympus(process):
             verify_key_hex = verify_key.encode(encoder=nacl.encoding.HexEncoder)
             public_keys.append(verify_key_hex)
         parse_failures()
-        output("replica_failure_map is : ", replica_failure_map, " ", self.config.config_id)
 
         i = 0
         for replica in replicaList:
