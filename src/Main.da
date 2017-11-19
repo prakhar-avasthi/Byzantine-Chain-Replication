@@ -15,6 +15,7 @@ class Olympus(process):
         self.max_checkpoint = {}
         self.longest_history = None
         self.longest_database = None
+        self.include_in_quoram = 0
 
     def run():
         output("[Olympus:] Started")
@@ -54,7 +55,7 @@ class Olympus(process):
         self.wedged_data[replica_id] = (checkpoint_position, database, history)
         output("[Olympus:] Total received: ", self.num_wedged_message)
 
-        if(self.num_wedged_message == len(self.config.list_replica)):
+        if (self.num_wedged_message > len(self.config.list_replica)/2):
             self.num_wedged_message = 0
             max = -1
             for key in self.wedged_data:
@@ -72,15 +73,44 @@ class Olympus(process):
             output("[Olympus:] Longest Database: ", self.longest_database)
 
             for i in range(len(self.config.list_replica)):
-                (pos, db, hist) = self.wedged_data[i]
+                pos = None
+                db = None
+                hist = None
+                try:
+                    (pos, db, hist) = self.wedged_data[i]
+                except: pass
                 catch_up_history = calculateCatchUpHistory(i, self.longest_history, hist)
                 send(('catch-up', catch_up_history), to = self.config.list_replica[i])
 
+
     def receive(msg = ('caught-up', database, replica_id)):
         output("[Olympus:]<< caught-up from Replica: ", replica_id, " : database: ", database)
-        self.num_caughtup_message += 1
-        if(self.num_caughtup_message == len(self.config.list_replica)):
+        if compareCaughtUpState(database, self.longest_database):
+            self.num_caughtup_message += 1
+        else:
+            output("[Olympus:]Incorrect caught-up history: Not including Replica : ", replica_id, " in Quoram")
+        if(self.num_caughtup_message > len(self.config.list_replica)/2):
+            self.num_caughtup_message = 0
             makeNewConfiguration(self.longest_database, self.longest_history)
+
+    def compareCaughtUpState(replica_database, longest_database):
+        if replica_database is None:
+            return False
+
+        if longest_database is None:
+            return False
+
+        try:
+            for key in longest_database:
+                if not replica_database[key] == longest_database[key]:
+                    return False;
+
+            for key in replica_database:
+                if not replica_database[key] == longest_database[key]:
+                    return False;
+        except:
+            return False
+        return True
 
     def calculateCatchUpHistory(replica_id, longest_history, own_history):
         catch_up_history = []
@@ -91,6 +121,8 @@ class Olympus(process):
         return catch_up_history
 
     def presentInHistory(id, record, own_history):
+        if own_history is None:
+            return False
         ((record_action, record_result), record_proof) = record
         for i in range(len(own_history)):
             ((action, result), proof) = own_history[i]
@@ -744,18 +776,18 @@ class Replica(process):
             output("[Replica",self.index,":] catch-up History: Slot: ", action.replica_slot, ", operation: ", action.operation.toString())
 
         if len(catch_up_history) > 0:
-            state = catchUpWithLongestHistory(catch_up_history)
+            db_state = catchUpWithLongestHistory(catch_up_history)
         else:
-            state = self.running_state_log[len(self.running_state_log)-1]
+            db_state = self.running_state_log[len(self.running_state_log)-1]
         output("[Replica",self.index,":]>> caught-up")
-        send(('caught-up', state[1], self.index), to = olympus)
+        send(('caught-up', db_state[1], self.index), to = olympus)
 
     def catchUpWithLongestHistory(catch_up_history):
         #TODO: perform operation with slot number greater than last_state
         ((action, result), proof) = catch_up_history[len(catch_up_history)-1]
-        state = self.running_state_log[action.replica_slot]
-        output("[Replica",self.index,":]>> catchUpWithLongestHistory: ", state)
-        return state
+        temp_state = self.running_state_log[action.replica_slot]
+        output("[Replica",self.index,":]>> catchUpWithLongestHistory: ", temp_state)
+        return temp_state
         #last_state = self.running_state_log[len(self.running_state_log)-1]
         #output("[Replica",self.index,":]>> catchUpWithLongestHistory: ", last_state)
         #for i in range(len(catch_up_history)):
