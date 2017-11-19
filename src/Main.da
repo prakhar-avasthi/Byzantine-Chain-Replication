@@ -101,7 +101,7 @@ class Olympus(process):
     def makeNewConfiguration(database, history):
         output("[Olympus:] Making New Configuration")
         if self.config.config_id is None:
-            self.config.config_id = 1
+            self.config.config_id = 0
         else:
             self.config.config_id += 1
 
@@ -118,16 +118,21 @@ class Olympus(process):
             verify_key_hex = verify_key.encode(encoder=nacl.encoding.HexEncoder)
             public_keys.append(verify_key_hex)
         parse_failures()
+        output("replica_failure_map is : ", replica_failure_map, " ", self.config.config_id)
 
         i = 0
         for replica in replicaList:
-            failure_map = replica_failure_map[str(i)] if str(i) in self.replica_failure_map else {}
+            failure_map = replica_failure_map[(str(self.config.config_id), str(i))] if (str(self.config.config_id), str(i)) in self.replica_failure_map else {}
+
             if i is 0:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), list(history), public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), list(history)\
+                    , public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
             elif i is num_replica-1:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(database), list(history), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(database)\
+                        , list(history), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             else:
-                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica', dict(database), list(history),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica'\
+                        , dict(database), list(history),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
             i += 1
 
         self.config.list_replica = list(replicaList)
@@ -144,7 +149,10 @@ class Olympus(process):
             message_number = None
 
             matches = re.findall(r"\[(.+?)\]", failure[0])
-            failure_replica = matches[0].split(",")[1]
+
+            config_replica = matches[0].split(",")
+            failure_config = config_replica[0]
+            failure_replica = config_replica[1]
 
             failures_injected = failure[1].split(";")
 
@@ -162,9 +170,11 @@ class Olympus(process):
                 failure_type = failure_row[1]
 
                 try:
-                    self.replica_failure_map[str(failure_replica)][str(failure_type).strip()] = (source.strip(),(client_id, message_number))
+                    self.replica_failure_map[(str(failure_config).strip(), str(failure_replica).strip())][str(failure_type).strip()]\
+                                        = (source.strip(),(client_id, message_number))
                 except KeyError:
-                    self.replica_failure_map[str(failure_replica).strip()] = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
+                    self.replica_failure_map[(str(failure_config).strip(), str(failure_replica).strip())]\
+                                        = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
 
 class Replica(process):
     def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
@@ -347,6 +357,16 @@ class Replica(process):
                 result = performOperation(action)
                 del result_proof[0]
                 output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
+            elif client_index in self.shuttle_request and\
+                self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    crash()
+            elif client_index in self.shuttle_request and\
+                self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1:
+                    timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                    output("[Replica",self.index,":] Fault: Sleep injected for time:", timer)
+                    sleep(timer)
+                    order_statement.action = action
+                    result = performOperation(action)
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -823,8 +843,16 @@ class Replica(process):
         try:
             for key in fault_map:
                 if 'sleep' in key:
-                    return True
-            return False
+                    return int(key[key.find("(")+1:key.find(")")])
+            return -1
+        except KeyError:
+            return -1
+
+    def is_failure_crash(type, client, message):
+        try:
+            (source, (c,m)) = fault_map["crash()"]
+            if (type, (client, message)) == (source, (c,m)):
+                return True
         except KeyError:
             return False
 
