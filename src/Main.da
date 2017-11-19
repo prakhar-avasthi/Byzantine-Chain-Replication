@@ -306,6 +306,8 @@ class Replica(process):
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         action = forward_shuttle.action
         output("[Replica",self.index,":]<< Shuttle: ", action.operation.toString(), " from Replica: ", index-1)
+        is_invalid_order_sig = False
+        is_invalid_result_sig = False
 
         result = None
         try:
@@ -357,6 +359,18 @@ class Replica(process):
                 del result_proof[0]
                 output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
             elif client_index in self.shuttle_request and\
+                self.is_failure_invalid_order_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
+                    is_invalid_order_sig = True
+                    order_statement.action = action
+                    result = performOperation(action)
+            elif client_index in self.shuttle_request and\
+                self.is_failure_invalid_result_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
+                    is_invalid_result_sig = True
+                    order_statement.action = action
+                    result = performOperation(action)
+            elif client_index in self.shuttle_request and\
                 self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                     crash()
             elif client_index in self.shuttle_request and\
@@ -373,6 +387,9 @@ class Replica(process):
 
             ########### Sign order statement, Add to order proof ###########
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
+            if is_invalid_order_sig :
+                signed_order_statement = invalid_sign(signed_order_statement)
+                is_invalid_order_sig = False
             order_proof.append(signed_order_statement)
 
             ######## Create result statement ########
@@ -386,6 +403,9 @@ class Replica(process):
 
             ####### Sign Result Statement, Add to result_proof ###############
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+            if is_invalid_result_sig :
+                signed_result_statement = invalid_sign(signed_result_statement)
+                is_invalid_result_sig = False
             result_proof.append(signed_result_statement)
 
             ######## Forward Shuttle #######
@@ -421,6 +441,30 @@ class Replica(process):
                 result = performOperation(action)
                 del result_proof[0]
                 output("[Replica",self.index,":] Successfully injected fault: Omit Head Result")
+
+            elif client_index in self.shuttle_request and\
+                self.is_failure_invalid_order_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
+                    is_invalid_order_sig = True
+                    order_statement.action = action
+                    result = performOperation(action)
+            elif client_index in self.shuttle_request and\
+                self.is_failure_invalid_result_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
+                    is_invalid_result_sig = True
+                    order_statement.action = action
+                    result = performOperation(action)
+            elif client_index in self.shuttle_request and\
+                self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    crash()
+            elif client_index in self.shuttle_request and\
+                self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1:
+                    timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                    output("[Replica",self.index,":] Fault: Sleep injected for time:", timer)
+                    sleep(timer)
+                    order_statement.action = action
+                    result = performOperation(action)
+
             else:
                 #output("[Replica",self.index,":] No fault Injected ", client_index, " Corresponding to request ",self.shuttle_request[client_index])
                 order_statement.action = action
@@ -428,6 +472,9 @@ class Replica(process):
 
             ##### Sign Order statement, Add to order proof
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
+            if is_invalid_order_sig :
+                signed_order_statement = invalid_sign(signed_order_statement)
+                is_invalid_order_sig = False
             order_proof.append(signed_order_statement)
 
             ##### Create Result statement ###
@@ -442,6 +489,9 @@ class Replica(process):
 
             ##### Sign Result statement, Add to Result proof
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+            if is_invalid_result_sig :
+                signed_result_statement = invalid_sign(signed_result_statement)
+                is_invalid_result_sig = False
             result_proof.append(signed_result_statement)
 
             ##### Send Result to Client ######
@@ -934,6 +984,8 @@ class Replica(process):
                     output("[Replica",self.index,":] Result doesnot match so returning false")
                     return False
             except KeyError:
+                return False
+            except Exception:
                 return False
         return True
 
