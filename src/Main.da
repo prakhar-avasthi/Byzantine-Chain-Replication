@@ -273,6 +273,7 @@ class Replica(process):
         self.current_slot_id = {}
         self.running_state_log = []
         self.running_state_log.append((0, dict()))
+        self.check_point_threshold = 4
 
         ## Flags for fault injections ##
         self.is_invalid_order_sig = False
@@ -294,7 +295,7 @@ class Replica(process):
             output("New Configuration Fault: Crash Replica injected")
             self.is_crash = True
         elif self.is_failure_sleep("new_configuration", str(-1), str(self.config_id)) != -1:
-            timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+            timer = self.is_failure_sleep("new_configuration", str(-1), str(self.config_id))
             output("New Configuration Fault: Sleep injected for time:", timer, " seconds")
             self.is_sleep = timer
         elif self.is_failure_drop("new_configuration", str(-1), str(self.config_id)):
@@ -347,7 +348,7 @@ class Replica(process):
             else:
                 self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
                 return 'FAIL'
-        elif operation.type is 4:
+        elif operation.type is check_point_threshold:
             if key in self.database:
                 val = self.database[key]
                 list_val = val+value
@@ -458,24 +459,29 @@ class Replica(process):
                 output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
                 self.is_invalid_order_sig = True
             elif self.is_failure_invalid_result_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
-                    self.is_invalid_result_sig = True
-            elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Crash Replica injected")
-                    crash()
-            elif self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1:
+                output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
+                self.is_invalid_result_sig = True
+            elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_crash:
+                output("[Replica",self.index,":] Fault: Crash Replica injected")
+                crash()
+                self.is_crash = False
+            elif self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1 or self.is_sleep > -1:
+                timer = self.is_sleep
+                if timer == -1:
                     timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
-                    output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
-                    sleep(timer)
+                output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
+                sleep(timer)
+                self.is_sleep = -1
             elif self.is_failure_drop("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Drop message Injected")
-                    self.is_drop_shuttle = True
-            elif self.is_failure_extra_op("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
-                    extra_op(forward_shuttle)
+                output("[Replica",self.index,":] Fault: Drop message Injected")
+                self.is_drop_shuttle = True
+            elif self.is_failure_extra_op("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_extra_op:
+                output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
+                extra_op(forward_shuttle)
+                self.is_extra_op = False
             elif self.is_failure_truncate_history("shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                    is_truncate_history = True
+                output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
+                is_truncate_history = True
       #########################################################################################################
 
         ### normal replica will add its order and result statement
@@ -694,8 +700,8 @@ class Replica(process):
                 output("[Replica",self.index,":]>> Result Shuttle: ", action.operation.toString(), " to Replica: ", index-1)
                 send(('result_shuttle', self, result_shuttle, result, client_index), to = replicaList[index - 1])
             else :
-                #### Create check point shuttle after every 30 sequence #####
-                if result_shuttle.action.replica_slot % 30 == 0 :
+                #### Create check point shuttle after every check_point_threshold sequence #####
+                if result_shuttle.action.replica_slot % check_point_threshold == 0 :
                     class_check_point_statement = import_da('CheckPointStatement')
                     check_point_statement = class_check_point_statement.CheckPointStatement()
                     check_point_statement.check_point_upto = result_shuttle.action.replica_slot
@@ -723,6 +729,32 @@ class Replica(process):
     def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
 
         output("[Replica",self.index,"]: Received check point shuttle: ", check_point_upto)
+
+        ################################ Failure Injections for phase 3 #######################################
+        if self.is_failure_invalid_order_sig("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Invalid Order Sig injected")
+            self.is_invalid_order_sig = True
+        elif self.is_failure_invalid_result_sig("checkpoint",str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Invalid Result Sig injected")
+            self.is_invalid_result_sig = True
+        elif self.is_failure_crash("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))) != -1:
+            timer = self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
+            output("Check point shuttle Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+        elif self.is_failure_drop("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Drop message Injected")
+            self.is_drop_shuttle = True
+        elif self.is_failure_extra_op("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Extra Op Injected inserting Put('a', 'a')")
+            self.extra_op = True
+        elif self.is_failure_truncate_history("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Truncate history injected removing last entry from history")
+            is_truncate_history = True
+        #########################################################################################################
+
         running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######
@@ -787,6 +819,32 @@ class Replica(process):
     def receive(msg = ('completed_check_point_shuttle', replica, completed_check_point_shuttle, check_point_upto)):
 
         output("[Replica",self.index,"]: Received completed check point shuttle")
+
+        ################################ Failure Injections for phase 3 #######################################
+        if self.is_failure_invalid_order_sig("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Invalid Order Sig injected")
+            self.is_invalid_order_sig = True
+        elif self.is_failure_invalid_result_sig("completed_checkpoint",str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Invalid Result Sig injected")
+            self.is_invalid_result_sig = True
+        elif self.is_failure_crash("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))) != -1:
+            timer = self.is_failure_sleep("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
+            output("Completed check point shuttle Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+        elif self.is_failure_drop("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Drop message Injected")
+            self.is_drop_shuttle = True
+        elif self.is_failure_extra_op("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Extra Op Injected inserting Put('a', 'a')")
+            self.extra_op = True
+        elif self.is_failure_truncate_history("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Completed check point shuttle Fault: Truncate history injected removing last entry from history")
+            is_truncate_history = True
+        #########################################################################################################
+
         self.completed_check_point_count += 1
         running_state = insert_entries(self.index)
 
@@ -804,13 +862,16 @@ class Replica(process):
 
             output("[Replica",self.index,"]: Completed Check point shuttle verified")
 
-            #if is_failure_drop_check_pt_stmt(self.completed_check_point_count)
-
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
-            self.history = self.history[30:]
+            self.history = self.history[check_point_threshold:]
             output("[Replica",self.index,"]: New History :", len(self.history))
             self.checkpoint_position = check_point_upto
+
+            if is_failure_drop_check_pt_stmt("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+                output("Completed check point shuttle Fault: Drop check point statement injected")
+                completed_check_point_shuttle.check_point_proof = completed_check_point_shuttle.check_point_proof[self.index:]
+
             self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
             ######## Send Completed Check Point Shuttle #######
@@ -910,6 +971,7 @@ class Replica(process):
         output("[Replica",self.index,":]<< wedge")
         self.state = 'IMMUTABLE'
         output("[Replica",self.index,":]>> wedged")
+
         if is_failure_crash("wedge_request", '-1', str(self.config_id)):
             output("[Replica",self.index,":] Fault: Crash Injected on wedge request")
             crash()
@@ -1017,8 +1079,12 @@ class Replica(process):
     def is_failure_sleep(type, client, message) :
         try:
             for key in fault_map:
-                if 'sleep' in key:
-                    return int(key[key.find("(")+1:key.find(")")])
+                if 'sleep' in key :
+                    (source, (c,m)) = fault_map[key]
+                    if (type, (client, message)) == (source, (c,m)):
+                        return int(key[key.find("(")+1:key.find(")")])
+                    else:
+                        return -1
             return -1
         except KeyError:
             return -1
@@ -1170,7 +1236,7 @@ class Replica(process):
 
     def insert_entries(index) :
         running_state = []
-        for i in range(30) :
+        for i in range(check_point_threshold) :
             result_statement = self.history[i][1].result_proof[index]
             verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
             unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
