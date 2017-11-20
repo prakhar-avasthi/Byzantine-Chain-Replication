@@ -992,6 +992,15 @@ class Replica(process):
     def receive(msg = ('catch-up', catch_up_history)):
         output("[Replica",self.index,":]<< catch-up")
         output("[Replica",self.index,":] catch-up History")
+
+        if self.is_failure_crash("catch-up", str(-1), str(self.config_id)):
+            output("Catch Up Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("catch-up", str(-1), str(self.config_id)) != -1:
+            timer = self.is_failure_sleep("catch-up", str(-1), str(self.config_id))
+            output("Catch Up Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+
         for i in range(len(catch_up_history)):
             ((action, result), proof) = catch_up_history[i]
             output("[Replica",self.index,":] catch-up History: Slot: ", action.replica_slot, ", operation: ", action.operation.toString())
