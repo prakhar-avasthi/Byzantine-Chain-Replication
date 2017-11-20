@@ -154,7 +154,6 @@ class Olympus(process):
         i = 0
         for replica in replicaList:
             failure_map = replica_failure_map[(str(self.config.config_id), str(i))] if (str(self.config.config_id), str(i)) in self.replica_failure_map else {}
-            output("Failure map is : ", failure_map, " ", i)
 
             if i is 0:
                 setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), list(history)\
@@ -192,7 +191,7 @@ class Olympus(process):
                 failure_row = re.findall(r'(?:[^,(]|\([^)]*\))+', failure_type)
                 matches = re.findall(r"\((.+?)\)", failure_row[0])
                 to_match = matches[0].split(",")
-                client_id = -1
+                client_id = '-1'
                 message_mumber = 0
                 if(len(to_match) > 1) :
                     client_id, message_number = matches[0].split(",")
@@ -349,6 +348,8 @@ class Replica(process):
             send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
+        if self.state == 'IMMUTABLE':
+            return
         action = forward_shuttle.action
         output("[Replica",self.index,":]<< Shuttle: ", action.operation.toString(), " from Replica: ", index-1)
 
@@ -832,16 +833,18 @@ class Replica(process):
         output("[Replica",self.index,":]<< wedge")
         self.state = 'IMMUTABLE'
         output("[Replica",self.index,":]>> wedged")
-        if is_failure_crash("wedged_request", -1, self.config_id):
+        if is_failure_crash("wedge_request", '-1', str(self.config_id)):
+            output("[Replica",self.index,":] Fault: Crash Injected on wedge request")
             crash()
-        elif is_failure_sleep("wedged_request", -1, self.config_id) > 0:
-            timer = is_failure_sleep("wedged_request", -1, self.config_id)
+        elif is_failure_sleep("wedge_request", '-1', str(self.config_id)) > 0:
+            output("[Replica",self.index,":] Fault: Sleep Replica Injected on wedge request")
+            timer = is_failure_sleep("wedge_request", '-1', str(self.config_id))
             sleep(timer)
-        #elif is_failure_truncate_history("wedged_request", -1, self.config_id) :
-            #TODO: implement both inside and function definition
-
-
-        send(('wedged', database, history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+        elif is_failure_truncate_history("wedge_request", '-1', str(self.config_id)) or self.is_truncate_history:
+            send(('wedged', database, history[:len(history) - 1], self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+            self.is_truncate_history = False
+        else:
+            send(('wedged', database, history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
 
     def receive(msg = ('catch-up', catch_up_history)):
         output("[Replica",self.index,":]<< catch-up")
@@ -923,12 +926,12 @@ class Replica(process):
         try:
             (source, (c,m)) = fault_map["invalid_order_sig()"]
             if (type, (client, message)) == (source, (c,m)):
+                output("Returning True")
                 return True
         except KeyError:
             return False
 
     def is_failure_sleep(type, client, message) :
-        output("12##### fault map is", fault_map, "###########")
         try:
             for key in fault_map:
                 if 'sleep' in key:
@@ -970,8 +973,6 @@ class Replica(process):
             return False
 
     def is_failure_increment_slot(type, client, message) :
-        output("###########", type, client, message, "#############")
-        output("##### fault map is", self.fault_map, "###########")
         try:
             (source, (c,m)) = self.fault_map["increment_slot()"]
             output("123###########", source, c, m, "#############")
