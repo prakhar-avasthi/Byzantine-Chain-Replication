@@ -154,7 +154,7 @@ class Olympus(process):
         i = 0
         for replica in replicaList:
             failure_map = replica_failure_map[(str(self.config.config_id), str(i))] if (str(self.config.config_id), str(i)) in self.replica_failure_map else {}
-
+            output("failure map is :", failure_map)
             if i is 0:
                 setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), list(history)\
                     , public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
@@ -227,6 +227,31 @@ class Replica(process):
         self.is_invalid_result_sig = False
         self.is_drop_shuttle = False
         self.is_truncate_history = False
+        self.is_crash = False
+        self.is_sleep = -1
+        self.is_extra_op = False
+
+        ###### Fault injection on new configuration ######
+        if self.is_failure_invalid_order_sig("new_configuration", str(-1), str(self.config_id)):
+            output("New Configuration Fault: Invalid Order Sig injected")
+            self.is_invalid_order_sig = True
+        elif self.is_failure_invalid_result_sig("new_configuration", str(-1), str(self.config_id)):
+            output("New Configuration Fault: Invalid Result Sig injected")
+            self.is_invalid_result_sig = True
+        elif self.is_failure_crash("new_configuration", str(-1), str(self.config_id - 1)):
+            output("New Configuration Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("new_configuration", str(-1), str(self.config_id)) != -1:
+            timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+            output("New Configuration Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+        elif self.is_failure_drop("new_configuration", str(-1), str(self.config_id)):
+            output("New Configuration Fault: Drop message Injected")
+            self.is_drop_shuttle = True
+        elif self.is_failure_extra_op("new_configuration", str(-1), str(self.config_id)):
+            output("New Configuration Fault: Extra Op Injected inserting Put('a', 'a')")
+            extra_op(forward_shuttle)
+        ######### Fault Injection ends ##################
 
     def run():
         self.state = 'ACTIVE'
