@@ -10,12 +10,16 @@ class Olympus(process):
         self.replica_public_keys = []
         self.replica_failure_map = {}
         self.num_wedged_message = 0
+        self.total_active_replica = 0
         self.num_caughtup_message = 0
+        self.num_correct_caughtup_message = 0
         self.wedged_data = {}
+        self.caught_up_data = {}
         self.max_checkpoint = {}
         self.longest_history = None
         self.longest_database = None
         self.include_in_quoram = 0
+        self.valid_running_state_message = 0
 
     def run():
         output("[Olympus:] Started")
@@ -37,6 +41,17 @@ class Olympus(process):
     def receive(msg = ('req_re_configuration', config_id)):
         output("[Olympus:]<< req_re_configuration")
         if config_id == self.config.config_id:
+            self.num_wedged_message = 0
+            self.total_active_replica = 0
+            self.num_caughtup_message = 0
+            self.num_correct_caughtup_message = 0
+            self.wedged_data = {}
+            self.caught_up_data = {}
+            self.max_checkpoint = {}
+            self.longest_history = None
+            self.longest_database = None
+            self.include_in_quoram = 0
+            self.valid_running_state_message = 0
             for i in range(len(self.config.list_replica)):
                 output("[Olympus:]>> wedge to Replica: ", i)
                 send(('wedge'), to = self.config.list_replica[i])
@@ -52,6 +67,7 @@ class Olympus(process):
             self.max_checkpoint[checkpoint_position] = 1
 
         self.num_wedged_message += 1
+        self.total_active_replica += 1
         self.wedged_data[replica_id] = (checkpoint_position, database, history)
         output("[Olympus:] Total received: ", self.num_wedged_message)
 
@@ -85,15 +101,47 @@ class Olympus(process):
 
     def receive(msg = ('caught-up', database, replica_id)):
         output("[Olympus:]<< caught-up from Replica: ", replica_id, " : database: ", database)
-        if compareCaughtUpState(database, self.longest_database):
-            self.num_caughtup_message += 1
+        self.num_caughtup_message += 1
+        self.caught_up_data[replica_id] = database
+        if compareDatabase(database, self.longest_database):
+            self.num_correct_caughtup_message += 1
         else:
             output("[Olympus:]Incorrect caught-up history: Not including Replica : ", replica_id, " in Quoram")
-        if(self.num_caughtup_message > len(self.config.list_replica)/2):
-            self.num_caughtup_message = 0
-            makeNewConfiguration(self.longest_database, self.longest_history)
+        if(self.num_correct_caughtup_message > len(self.config.list_replica)/2):
+            self.num_correct_caughtup_message = 0
+            makeNewConfiguration(self.longest_database, [])
 
-    def compareCaughtUpState(replica_database, longest_database):
+        if(self.num_caughtup_message == self.total_active_replica):
+            output("[Olympus:]<< Longest history might be of byzantine")
+            seq = list(range(len(self.config.list_replica)))
+            import random
+            random_seq = random.sample(seq, len(self.config.list_replica))
+            output("################: random: ", random_seq)
+            for i in random_seq:
+                output("[Olympus:]>> get-running-state to Replica: ", i)
+                send(('get-running-state'), to = self.config.list_replica[i])
+                self.valid_running_state_message = 0
+                await(self.valid_running_state_message == 1 or self.valid_running_state_message == 2)
+                if self.valid_running_state_message == 1:
+                    break
+                if self.valid_running_state_message == 2:
+                    break
+            if (self.valid_running_state_message == 2):
+                output("[Olympus:] Too many byzantines")
+            elif (self.valid_running_state_message == 1):
+                output("[Olympus:] New configuration created")
+
+    def receive(msg = ('running-state', database, replica_id)):
+        output("[Olympus:]<< running-state from Replica: ", replica_id, " : database: ", database)
+        if compareDatabase(database, self.caught_up_data[replica_id]):
+            output("[Olympus:]<< running-state matching with caught-up history")
+            self.valid_running_state_message = 1
+            makeNewConfiguration(database, [])
+        else:
+            self.valid_running_state_message = 2
+
+
+    def compareDatabase(replica_database, longest_database):
         if replica_database is None:
             return False
 
@@ -856,6 +904,12 @@ class Replica(process):
             db_state = self.running_state_log[len(self.running_state_log)-1]
         output("[Replica",self.index,":]>> caught-up")
         send(('caught-up', db_state[1], self.index), to = olympus)
+
+    def receive(msg = ('get-running-state')):
+        output("[Replica",self.index,":]<< get-running-state")
+        db_state = self.running_state_log[len(self.running_state_log)-1]
+        output("[Replica",self.index,":]>> running-state")
+        send(('running-state', db_state[1], self.index), to = olympus)
 
     def catchUpWithLongestHistory(catch_up_history):
         #TODO: perform operation with slot number greater than last_state
