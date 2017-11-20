@@ -725,6 +725,32 @@ class Replica(process):
     def receive(msg = ('check_point_shuttle', replica, check_point_shuttle, check_point_upto)):
 
         output("[Replica",self.index,"]: Received check point shuttle: ", check_point_upto)
+
+        ################################ Failure Injections for phase 3 #######################################
+        if self.is_failure_invalid_order_sig("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Invalid Order Sig injected")
+            self.is_invalid_order_sig = True
+        elif self.is_failure_invalid_result_sig("checkpoint",str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Invalid Result Sig injected")
+            self.is_invalid_result_sig = True
+        elif self.is_failure_crash("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))) != -1:
+            timer = self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
+            output("Check point shuttle Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+        elif self.is_failure_drop("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Drop message Injected")
+            self.is_drop_shuttle = True
+        elif self.is_failure_extra_op("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Extra Op Injected inserting Put('a', 'a')")
+            self.extra_op = True
+        elif self.is_failure_truncate_history("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
+            output("Check point shuttle Fault: Truncate history injected removing last entry from history")
+            is_truncate_history = True
+        #########################################################################################################
+
         running_state = insert_entries(self.index)
 
         ##### Crypto hash of check point running state ######
@@ -1022,10 +1048,8 @@ class Replica(process):
             return False
 
     def is_failure_drop_check_pt_stmt(type, client, message):
-        output("12#########", type, client, message, "###########12")
         try:
             (source, (c,m)) = fault_map["drop_checkpt_stmts()"]
-            output("123#########", source, c, m, "###########123")
             if (type, (client, message)) == (source, (c,m)):
                 return True
         except KeyError:
