@@ -65,9 +65,10 @@ class Olympus(process):
 
         ## Fetch the unsigned history ##
         try:
-            verify_key = nacl.signing.VerifyKey(self.replica_public_keys[int(replica_id)], encoder=nacl.encoding.HexEncoder)
-            history = pickle.loads(verify_key.verify(history))
-        except BadSignatureError:
+            verify_key = nacl.signing.VerifyKey(self.replica_public_keys[replica_id], encoder=nacl.encoding.HexEncoder)
+            history_1 = pickle.loads(verify_key.verify(history))
+            history = history_1
+        except nacl.exceptions.BadSignatureError :
             return
 
         ##[TODO] check validation of checkpoint proof
@@ -314,7 +315,7 @@ class Replica(process):
             self.is_drop_shuttle = True
         elif self.is_failure_extra_op("new_configuration", str(-1), str(self.config_id)):
             output("New Configuration Fault: Extra Op Injected inserting Put('a', 'a')")
-            extra_op(forward_shuttle)
+            self.is_extra_op = True
         ######### Fault Injection ends ##################
 
     def run():
@@ -377,6 +378,44 @@ class Replica(process):
         if self.type == 'head' and state == 'ACTIVE':
             output("[Replica",self.index,":]<< req_operation: ", operation.toString(), " Client: ", client_index)
 
+            try:
+                self.direct_client_request[client_index] += 1
+            except KeyError:
+                self.direct_client_request[client_index] = 1
+
+            message_number = str(self.direct_client_request[client_index])
+
+            ################################ Failure Injections for phase 3 #######################################
+            if client_index in self.shuttle_request :
+                if self.is_failure_invalid_order_sig("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
+                    self.is_invalid_order_sig = True
+                elif self.is_failure_invalid_result_sig("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
+                    self.is_invalid_result_sig = True
+                elif self.is_failure_crash("client_request", str(client_index), str(self.direct_client_request[client_index])) or self.is_crash:
+                    output("[Replica",self.index,":] Fault: Crash Replica injected")
+                    crash()
+                    self.is_crash = False
+                elif self.is_failure_sleep("client_request", str(client_index), str(self.direct_client_request[client_index])) != -1 or self.is_sleep > -1:
+                    timer = self.is_sleep
+                    if timer == -1:
+                        timer = self.is_failure_sleep("shuttle", str(client_index), str(self.direct_client_request[client_index]))
+                    output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
+                    sleep(timer)
+                    self.is_sleep = -1
+                elif self.is_failure_drop("client_request", str(client_index), str(self.direct_client_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Drop message Injected")
+                    self.is_drop_shuttle = True
+                elif self.is_failure_extra_op("client_request", str(client_index), str(self.direct_client_request[client_index])) or self.is_extra_op:
+                    output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
+                    extra_op(forward_shuttle)
+                    self.is_extra_op = False
+                elif self.is_failure_truncate_history("client_request", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
+                    is_truncate_history = True
+          #########################################################################################################
+
             check_point_time = False
             #### assign slot number ######
             try:
@@ -410,6 +449,10 @@ class Replica(process):
 
             ##### Sign order statement, add to Order proof #######
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
+            if self.is_invalid_order_sig :
+                signed_order_statement = invalid_sign(signed_order_statement)
+                self.is_invalid_order_sig = False
+            order_proof.append(signed_order_statement)
 
 
             ###### Create result statement ######
@@ -423,14 +466,12 @@ class Replica(process):
 
             ##### sign result statement, add to result proof #######
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+            if self.is_invalid_result_sig :
+                signed_result_statement = invalid_sign(signed_result_statement)
+                self.is_invalid_result_sig = False
+            result_proof.append(signed_result_statement)
 
-            try:
-                self.direct_client_request[client_index] += 1
-            except KeyError:
-                self.direct_client_request[client_index] = 1
-
-            message_number = str(self.direct_client_request[client_index])
-
+            ## Failure injection scenario ##
             if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), message_number):
                 output("[Replica",self.index,":] Fault: Change Result,Client ", client_index, ", Request ",message_number)
                 temp_result = "OK"
@@ -455,8 +496,12 @@ class Replica(process):
             forward_shuttle.action = action
             forward_shuttle.order_proof = order_proof
             forward_shuttle.result_proof = result_proof
-            output("[Replica",self.index,":]>> Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
-            send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
+
+            if not is_drop_shuttle:
+                output("[Replica",self.index,":]>> Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
+                send(('forward_shuttle', self, forward_shuttle, client, client_index), to = self.replicaList[index + 1])
+            else:
+                is_drop_shuttle = False
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         if self.state == 'IMMUTABLE':
@@ -695,10 +740,7 @@ class Replica(process):
 
             ################################ Failure Injections for phase 3 #######################################
             if client_index in self.shuttle_request :
-                if self.is_failure_invalid_order_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
-                    self.is_invalid_order_sig = True
-                elif self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                if self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
                     self.is_invalid_result_sig = True
                 elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_crash:
@@ -712,13 +754,6 @@ class Replica(process):
                     output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
                     sleep(timer)
                     self.is_sleep = -1
-                elif self.is_failure_drop("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
-                    output("[Replica",self.index,":] Fault: Drop message Injected")
-                    self.is_drop_shuttle = True
-                elif self.is_failure_extra_op("result_shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_extra_op:
-                    output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
-                    extra_op(forward_shuttle)
-                    self.is_extra_op = False
                 elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
                     is_truncate_history = True
@@ -763,6 +798,10 @@ class Replica(process):
 
                 ## resign the result_statement and replace it in result_proof
                 signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
+                if self.is_invalid_result_sig :
+                    signed_result_statement = invalid_sign(signed_result_statement)
+                    self.is_invalid_result_sig = False
+                result_proof.append(signed_result_statement)
                 result_shuttle.result_proof[self.index] = signed_result_statement
 
                 output("[Replica",self.index,":] Successfully injected fault: Change result")
@@ -1065,7 +1104,7 @@ class Replica(process):
             send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
             self.is_truncate_history = False
         else:
-            signed_history = self.private_key.sign(history)
+            signed_history = self.private_key.sign(pickle.dumps(history))
             send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
 
     def receive(msg = ('catch-up', catch_up_history)):
@@ -1267,19 +1306,24 @@ class Replica(process):
         invalid_signed = nacl.signing.SignedMessage._from_parts(sig._signature, sig._message, newsigned)
         return invalid_signed
 
-    def extra_op(shuttle) :
+    def extra_op(shuttle, type) :
 
         class_action = import_da('Action')
         action = class_action.Action()
 
-        action.replica_slot = shuttle.action.replica_slot
-        action.seq_id = shuttle.action.seq_id
+        action.seq_id = -1
 
         action.operation = import_da('Operation').Operation()
         action.operation.type = 1
-        action.operation.client_seq_id = shuttle.action.operation.client_seq_id
+        action.operation.client_seq_id = -1
         action.operation.command = "('a', 'a')"
-        shuttle.action.replica_slot += 1
+
+        if type == "normal":
+            action.replica_slot = shuttle.action.replica_slot
+            shuttle.action.replica_slot += 1
+        else :
+            action.replica_slot = self.replica_slot
+            self.replica_slot += 1
 
         performOperation(action)
 
