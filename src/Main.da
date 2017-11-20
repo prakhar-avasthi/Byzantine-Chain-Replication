@@ -60,6 +60,14 @@ class Olympus(process):
 
     def receive(msg = ('wedged', database, history, checkpoint_proof, checkpoint_position, replica_id)):
         output("[Olympus:]<< wegded from Replica: ", replica_id, " : History length: ", len(history), " : ChkPoint", checkpoint_position)
+
+        ## Fetch the unsigned history ##
+        try:
+            verify_key = nacl.signing.VerifyKey(self.replica_public_keys[int(replica_id)], encoder=nacl.encoding.HexEncoder)
+            history = pickle.loads(verify_key.verify(history))
+        except BadSignatureError:
+            return
+
         ##[TODO] check validation of checkpoint proof
         try:
             self.max_checkpoint[checkpoint_position] += 1
@@ -399,7 +407,7 @@ class Replica(process):
 
             ##### Sign order statement, add to Order proof #######
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
-            order_proof.append(signed_order_statement)
+
 
             ###### Create result statement ######
             class_result_statement = import_da('ResultStatement')
@@ -412,6 +420,30 @@ class Replica(process):
 
             ##### sign result statement, add to result proof #######
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
+
+            try:
+                self.direct_client_request[client_index] += 1
+            except KeyError:
+                self.direct_client_request[client_index] = 1
+
+            message_number = str(self.direct_client_request[client_index])
+
+            if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), message_number):
+                output("[Replica",self.index,":] Fault: Change Result,Client ", client_index, ", Request ",message_number)
+                temp_result = "OK"
+
+                ##### Crypto Hash of faulty result #####
+                result_digest = calculate_result_digest(temp_result)
+                result_statement.result = result_digest
+
+                ## re-sign the result_statement and replace it in result_proof
+                signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
+
+            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("client_request", str(client_index), message_number):
+                output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.direct_client_request[client_index])
+                del result_proof[0]
+
+            order_proof.append(signed_order_statement)
             result_proof.append(signed_result_statement)
 
             ####### create forward shuttle and send #######
@@ -652,6 +684,38 @@ class Replica(process):
 
         ##### if result proof is valid, add in history ######
         if is_valid  and state == 'ACTIVE':
+
+            ################################ Failure Injections for phase 3 #######################################
+            if client_index in self.shuttle_request :
+                if self.is_failure_invalid_order_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
+                    self.is_invalid_order_sig = True
+                elif self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
+                    self.is_invalid_result_sig = True
+                elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_crash:
+                    output("[Replica",self.index,":] Fault: Crash Replica injected")
+                    crash()
+                    self.is_crash = False
+                elif self.is_failure_sleep("result_shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1 or self.is_sleep > -1:
+                    timer = self.is_sleep
+                    if timer == -1:
+                        timer = self.is_failure_sleep("result_shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                    output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
+                    sleep(timer)
+                    self.is_sleep = -1
+                elif self.is_failure_drop("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Drop message Injected")
+                    self.is_drop_shuttle = True
+                elif self.is_failure_extra_op("result_shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_extra_op:
+                    output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
+                    extra_op(forward_shuttle)
+                    self.is_extra_op = False
+                elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                    output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
+                    is_truncate_history = True
+          #########################################################################################################
+
             action = result_shuttle.action
             self.history.append(((action, result), result_shuttle))
 
@@ -984,10 +1048,12 @@ class Replica(process):
             timer = is_failure_sleep("wedge_request", '-1', str(self.config_id))
             sleep(timer)
         elif is_failure_truncate_history("wedge_request", '-1', str(self.config_id)) or self.is_truncate_history:
-            send(('wedged', database, history[:len(history) - 1], self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+            signed_history = self.private_key.sign(pickle.dumps(history[:len(history) - 1]))
+            send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
             self.is_truncate_history = False
         else:
-            send(('wedged', database, history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+            signed_history = self.private_key.sign(history)
+            send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
 
     def receive(msg = ('catch-up', catch_up_history)):
         output("[Replica",self.index,":]<< catch-up")
