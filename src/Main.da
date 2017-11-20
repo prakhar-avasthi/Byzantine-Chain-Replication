@@ -109,6 +109,7 @@ class Olympus(process):
             output("[Olympus:]Incorrect caught-up history: Not including Replica : ", replica_id, " in Quoram")
         if(self.num_correct_caughtup_message > len(self.config.list_replica)/2):
             self.num_correct_caughtup_message = 0
+            self.num_caughtup_message = 0
             makeNewConfiguration(self.longest_database, [])
 
         if(self.num_caughtup_message == self.total_active_replica):
@@ -116,16 +117,19 @@ class Olympus(process):
             seq = list(range(len(self.config.list_replica)))
             import random
             random_seq = random.sample(seq, len(self.config.list_replica))
-            output("################: random: ", random_seq)
             for i in random_seq:
                 output("[Olympus:]>> get-running-state to Replica: ", i)
                 send(('get-running-state'), to = self.config.list_replica[i])
                 self.valid_running_state_message = 0
-                await(self.valid_running_state_message == 1 or self.valid_running_state_message == 2)
-                if self.valid_running_state_message == 1:
-                    break
-                if self.valid_running_state_message == 2:
-                    break
+                if await(self.valid_running_state_message == 1 or self.valid_running_state_message == 2):
+                    if self.valid_running_state_message == 1:
+                        break
+                    if self.valid_running_state_message == 2:
+                        break
+                elif timeout(3):
+                    output("[Olympus:]>> No response of get-running-state from Replica: ", i)
+                    pass
+
             if (self.valid_running_state_message == 2):
                 output("[Olympus:] Too many byzantines")
             elif (self.valid_running_state_message == 1):
