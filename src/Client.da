@@ -17,6 +17,7 @@ class Client(process):
         self.result_sequence = []
         self.database = {}
         self.wait_for_result = 1
+        self.is_request_timedout = False
 
         if not 'random' in workload:
             self.commands = workload.split(';')
@@ -82,8 +83,10 @@ class Client(process):
         send(('req_operation', operation, self, self.index), to=self.config.list_replica[0])
         self.command_state[key] = [command_and_state[0], command_and_state[1]]
         self.wait_for_result = 1
+        self.is_request_timedout = False
         if(await(self.wait_for_result < 1)): pass
         elif timeout(timeout):
+            self.is_request_timedout = True
             self.timeout_reply = 0
             self.error_in_replica = 0
             output("[Client",index,":] Client Timeout.")
@@ -97,10 +100,10 @@ class Client(process):
                         send(('req_operation_timeout', resend_operation, "client", self, self.index), to=replica)
                         i += 1
                     --timeout_req
-                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0):
-                        output("[Client",index,":]>> error_in_replica: ", self.error_in_replica)
+                    if await(self.timeout_reply > 0 or self.error_in_replica > 0):
                         self.timeout_reply = 0
                         if(self.error_in_replica > 0):
+                            output("[Client",index,":]>> error_in_replica: ", self.error_in_replica)
                             self.error_in_replica = -len(self.config.list_replica)
                             self.config = None
                             output("[Client",self.index,":]>> req_get_current_configuration")
@@ -116,7 +119,6 @@ class Client(process):
                         await(self.config != None)
                         output("[Client",index,":]>> Sending to new config ")
                         sendOperation(key)
-
 
     def makeOperation(seq_id, command):
         command = command.strip()
@@ -150,14 +152,16 @@ class Client(process):
 
         ## [TODO] handle the else case
         if is_verified:
-            output("[Client",index,":]<< res_operation: ", operation.toString() ," Result: ", result)
-            self.result_sequence.append(result)
             val = self.command_state[operation.client_seq_id-1]
-            val[1] = 102       ## State 102 -> completed
-            self.wait_for_result = 0
-            self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
-            discard_flag = False
-
+            if self.is_request_timedout == False and val[1] != 102:
+                output("[Client",index,":]<< res_operation: ", operation.toString() ," Result: ", result)
+                self.result_sequence.append(result)
+                val[1] = 102       ## State 102 -> completed
+                self.wait_for_result = 0
+                self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
+                discard_flag = False
+            else:
+                output("[Client",index,":]<< res_operation: ", operation.toString() ," Result: ", result, " ignoring as request is timed-out already.")
     def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
         if error is None:
             output("Client",index,":<< res_operation_timeout: ", operation.toString() ," Result: ", result, ", Replica: ", replica_index)
@@ -169,9 +173,15 @@ class Client(process):
             is_verified = verify(result_digest, result_proof)
 
             if is_verified:
-                self.timeout_reply += 1
-                if self.timeout_reply > len(self.config.list_replica)/2:
-                    output("[Client",index,":] Got correct result from Quoram")
+                if self.is_request_timedout == True:
+                    self.timeout_reply += 1
+                    self.is_request_timedout = False
+                    self.result_sequence.append(result)
+                    val = self.command_state[operation.client_seq_id-1]
+                    val[1] = 102       ## State 102 -> completed
+                    self.wait_for_result = 0
+                    self.command_state[operation.client_seq_id-1] = [val[0], val[1]]
+                    discard_flag = False
             else:
                 output("[Client",index,":] Invalid Result, Request Reconfiguration")
         else:
@@ -181,6 +191,7 @@ class Client(process):
     def resultValidation():
         output("[Client",index,":] Test case completed! Validating Result")
         client_res_seq = []
+
         if len(self.commands) != len(self.result_sequence):
             output("[Client",index,"] Invalid Final Result!")
             return
