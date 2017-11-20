@@ -273,7 +273,7 @@ class Replica(process):
         self.current_slot_id = {}
         self.running_state_log = []
         self.running_state_log.append((0, dict()))
-        self.check_point_threshold = 4
+        self.check_point_threshold = 10
 
         ## Flags for fault injections ##
         self.is_invalid_order_sig = False
@@ -312,6 +312,7 @@ class Replica(process):
         await(some(received(('terminate_replica'))))
 
     def performOperation(action):
+        result = None
         operation = action.operation
         output("[Replica",self.index,":] Perform: ", operation.toString())
         import re
@@ -329,35 +330,32 @@ class Replica(process):
 
         if operation.type is 1:
             self.database[key] = value
-            self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-            return 'OK'
+            result = 'OK'
         elif operation.type is 2:
             if key in self.database:
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return self.database[key]
+                result = self.database[key]
             else:
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return ''
+                result = ''
         elif operation.type is 3:
             limit = value.split(':')
             if key in self.database and len(self.database[key]) >= int(limit[1]):
                 val = self.database[key]
                 self.database[key] = val[int(limit[0]):int(limit[1])]
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return 'OK'
+                result = 'OK'
             else:
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return 'FAIL'
-        elif operation.type is check_point_threshold:
+                result = 'FAIL'
+        elif operation.type is 4:
             if key in self.database:
                 val = self.database[key]
                 list_val = val+value
                 self.database[key] = list_val
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return 'OK'
+                result = 'OK'
             else:
-                self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
-                return 'FAIL'
+                result = 'FAIL'
+
+        self.running_state_log.append((action.replica_slot, copy.deepcopy(self.database)))
+        output("[Replica",self.index,":] Perform: ", operation.toString(), ", result: ", result)
+        return result
 
     def receive(msg = ('init_hist', replica_list)):
         self.state = 'ACTIVE'
@@ -427,6 +425,12 @@ class Replica(process):
 
     def receive(msg = ('forward_shuttle', replica, forward_shuttle, client, client_index)):
         if self.state == 'IMMUTABLE':
+            return
+        output("[Replica",self.index,":]<< forward_shuttle : ", forward_shuttle.action.replica_slot, ", len : ", len(self.running_state_log))
+        if self.running_state_log[len(self.running_state_log)-1][0] + 1 != forward_shuttle.action.replica_slot:
+            output("[Replica",self.index,":] Holes in the slot number. Become Immutable")
+            self.state = 'IMMUTABLE'
+            send(('req_re_configuration', config_id), to = olympus)
             return
         action = forward_shuttle.action
         output("[Replica",self.index,":]<< Shuttle: ", action.operation.toString(), " from Replica: ", index-1)
@@ -808,7 +812,7 @@ class Replica(process):
 
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
-            self.history = self.history[30:]
+            self.history = self.history[check_point_threshold:]
             self.checkpoint_position = check_point_statement.check_point_upto
             self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
@@ -1236,7 +1240,7 @@ class Replica(process):
 
     def insert_entries(index) :
         running_state = []
-        for i in range(check_point_threshold) :
+        for i in range(self.check_point_threshold) :
             result_statement = self.history[i][1].result_proof[index]
             verify_key = nacl.signing.VerifyKey(self.public_keys[index], encoder=nacl.encoding.HexEncoder)
             unsigned_result_statement = pickle.loads(verify_key.verify(result_statement))
