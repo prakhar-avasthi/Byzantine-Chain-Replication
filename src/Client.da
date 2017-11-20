@@ -97,9 +97,15 @@ class Client(process):
                         send(('req_operation_timeout', resend_operation, "client", self, self.index), to=replica)
                         i += 1
                     --timeout_req
-                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > len(self.config.list_replica)-1):
+                    if await(self.timeout_reply > len(self.config.list_replica)/2 or self.error_in_replica > 0):
                         output("[Client",index,":]>> error_in_replica: ", self.error_in_replica)
-                        if(self.error_in_replica == len(self.config.list_replica)):
+                        self.timeout_reply = 0
+                        if(self.error_in_replica > 0):
+                            self.error_in_replica = -len(self.config.list_replica)
+                            self.config = None
+                            output("[Client",self.index,":]>> req_get_current_configuration")
+                            send(('req_get_current_configuration', self), to=olympus)
+                            await(self.config != None)
                             output("[Client",index,":]>> Sending to new config ")
                             sendOperation(key)
                     elif timeout(timeout):
@@ -171,10 +177,6 @@ class Client(process):
         else:
             output("[Client",self.index,":] Replica: ", replica_index, " is Immutable, Request  new configuration")
             self.error_in_replica += 1
-            output("[Client",self.index,":]>> req_get_current_configuration")
-            send(('req_get_current_configuration', self), to=olympus)
-            --newconfig_reply
-            output("########## here")
 
     def resultValidation():
         output("[Client",index,":] Test case completed! Validating Result")
