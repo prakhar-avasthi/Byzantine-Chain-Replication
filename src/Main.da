@@ -273,7 +273,7 @@ class Replica(process):
         self.current_slot_id = {}
         self.running_state_log = []
         self.running_state_log.append((0, dict()))
-        self.check_point_threshold = 4
+        self.check_point_threshold = 10
 
         ## Flags for fault injections ##
         self.is_invalid_order_sig = False
@@ -808,7 +808,7 @@ class Replica(process):
 
             ##### Remove entries from its history upto the check point ####
             output("[Replica",self.index,"]: Removing entries from history upto :", check_point_upto, " : history length: ", len(self.history))
-            self.history = self.history[30:]
+            self.history = self.history[check_point_threshold:]
             self.checkpoint_position = check_point_statement.check_point_upto
             self.checkpoint_proof = completed_check_point_shuttle.check_point_proof
 
