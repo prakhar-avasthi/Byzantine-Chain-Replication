@@ -997,6 +997,15 @@ class Replica(process):
 
     def receive(msg = ('get-running-state')):
         output("[Replica",self.index,":]<< get-running-state")
+
+        if self.is_failure_crash("get_running_state", str(-1), str(self.config_id)):
+            output("Get running state Fault: Crash Replica injected")
+            self.is_crash = True
+        elif self.is_failure_sleep("get_running_state", str(-1), str(self.config_id)) != -1:
+            timer = self.is_failure_sleep("get_running_state", str(-1), str(self.config_id))
+            output("Get running state Fault: Sleep injected for time:", timer, " seconds")
+            self.is_sleep = timer
+
         db_state = self.running_state_log[len(self.running_state_log)-1]
         output("[Replica",self.index,":]>> running-state")
         send(('running-state', db_state[1], self.index), to = olympus)
@@ -1073,10 +1082,12 @@ class Replica(process):
             return False
 
     def is_failure_sleep(type, client, message) :
+        #output("12##########", type, client, message, "############12")
         try:
             for key in fault_map:
                 if 'sleep' in key :
                     (source, (c,m)) = fault_map[key]
+                    #output("123##########", source, c, m, "############123")
                     if (type, (client, message)) == (source, (c,m)):
                         return int(key[key.find("(")+1:key.find(")")])
                     else:
