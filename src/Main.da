@@ -123,6 +123,7 @@ class Olympus(process):
             makeNewConfiguration(self.longest_database, [])
 
         if(self.num_caughtup_message == self.total_active_replica):
+            self.total_active_replica = 0
             output("[Olympus:]<< Longest history might be of byzantine")
             seq = list(range(len(self.config.list_replica)))
             import random
@@ -290,24 +291,22 @@ class Replica(process):
         self.is_invalid_result_sig = False
         self.is_drop_shuttle = False
         self.is_truncate_history = (False, -1)
-        self.is_crash = False
-        self.is_sleep = -1
         self.is_extra_op = False
 
         ###### Fault injection on new configuration ######
-        if self.is_failure_invalid_order_sig("new_configuration", str(-1), str(self.config_id)):
+        if self.is_failure_invalid_order_sig("new_configuration", str(-1), str(self.config_id-1)):
             output("New Configuration Fault: Invalid Order Sig injected")
             self.is_invalid_order_sig = True
-        elif self.is_failure_invalid_result_sig("new_configuration", str(-1), str(self.config_id)):
+        elif self.is_failure_invalid_result_sig("new_configuration", str(-1), str(self.config_id-1)):
             output("New Configuration Fault: Invalid Result Sig injected")
             self.is_invalid_result_sig = True
         elif self.is_failure_crash("new_configuration", str(-1), str(self.config_id - 1)):
             output("New Configuration Fault: Crash Replica injected")
-            self.is_crash = True
+            crash()
         elif self.is_failure_sleep("new_configuration", str(-1), str(self.config_id - 1)) != -1:
             timer = self.is_failure_sleep("new_configuration", str(-1), str(self.config_id - 1))
             output("New Configuration Fault: Sleep injected for time:", timer, " seconds")
-            self.is_sleep = timer
+            sleep(timer)
         elif self.is_failure_drop("new_configuration", str(-1), str(self.config_id - 1)):
             output("New Configuration Fault: Drop message Injected")
             self.is_drop_shuttle = True
@@ -395,17 +394,13 @@ class Replica(process):
                 elif self.is_failure_invalid_result_sig("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
                     self.is_invalid_result_sig = True
-                elif self.is_failure_crash("client_request", str(client_index), str(self.direct_client_request[client_index])) or self.is_crash:
+                elif self.is_failure_crash("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("[Replica",self.index,":] Fault: Crash Replica injected")
                     crash()
-                    self.is_crash = False
-                elif self.is_failure_sleep("client_request", str(client_index), str(self.direct_client_request[client_index])) != -1 or self.is_sleep > -1:
-                    timer = self.is_sleep
-                    if timer == -1:
-                        timer = self.is_failure_sleep("shuttle", str(client_index), str(self.direct_client_request[client_index]))
+                elif self.is_failure_sleep("client_request", str(client_index), str(self.direct_client_request[client_index])) != -1:
+                    timer = self.is_failure_sleep("shuttle", str(client_index), str(self.direct_client_request[client_index]))
                     output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
                     sleep(timer)
-                    self.is_sleep = -1
                 elif self.is_failure_drop("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("[Replica",self.index,":] Fault: Drop message Injected")
                     self.is_drop_shuttle = True
@@ -548,17 +543,13 @@ class Replica(process):
             elif self.is_failure_invalid_result_sig("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
                 self.is_invalid_result_sig = True
-            elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_crash:
+            elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Crash Replica injected")
                 crash()
-                self.is_crash = False
-            elif self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1 or self.is_sleep > -1:
-                timer = self.is_sleep
-                if timer == -1:
-                    timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+            elif self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1:
+                timer = self.is_failure_sleep("shuttle", str(client_index), str(self.shuttle_request[client_index]))
                 output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
                 sleep(timer)
-                self.is_sleep = -1
             elif self.is_failure_drop("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Drop message Injected")
                 self.is_drop_shuttle = True
@@ -751,17 +742,13 @@ class Replica(process):
                 if self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
                     self.is_invalid_result_sig = True
-                elif self.is_failure_crash("shuttle", str(client_index), str(self.result_shuttle_request[client_index])) or self.is_crash:
+                elif self.is_failure_crash("shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Crash Replica injected")
                     crash()
-                    self.is_crash = False
-                elif self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])) != -1 or self.is_sleep > -1:
-                    timer = self.is_sleep
-                    if timer == -1:
-                        timer = self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index]))
+                elif self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])) != -1:
+                    timer = self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index]))
                     output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
                     sleep(timer)
-                    self.is_sleep = -1
                 elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
                     entries = getEntriesToTruncate("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index]))
@@ -861,17 +848,17 @@ class Replica(process):
             self.is_invalid_result_sig = True
         elif self.is_failure_crash("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Check point shuttle Fault: Crash Replica injected")
-            self.is_crash = True
+            crash()
         elif self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))) != -1:
             timer = self.is_failure_sleep("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
             output("Check point shuttle Fault: Sleep injected for time:", timer, " seconds")
-            self.is_sleep = timer
+            sleep(timer)
         elif self.is_failure_drop("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Check point shuttle Fault: Drop message Injected")
             self.is_drop_shuttle = True
         elif self.is_failure_extra_op("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Check point shuttle Fault: Extra Op Injected inserting Put('a', 'a')")
-            self.extra_op = True
+            self.is_extra_op = True
         elif self.is_failure_truncate_history("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Check point shuttle Fault: Truncate history injected removing last entry from history")
             entries = getEntriesToTruncate("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
@@ -952,17 +939,17 @@ class Replica(process):
             self.is_invalid_result_sig = True
         elif self.is_failure_crash("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Completed check point shuttle Fault: Crash Replica injected")
-            self.is_crash = True
+            crash()
         elif self.is_failure_sleep("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))) != -1:
             timer = self.is_failure_sleep("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
             output("Completed check point shuttle Fault: Sleep injected for time:", timer, " seconds")
-            self.is_sleep = timer
+            sleep(timer)
         elif self.is_failure_drop("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Completed check point shuttle Fault: Drop message Injected")
             self.is_drop_shuttle = True
         elif self.is_failure_extra_op("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Completed check point shuttle Fault: Extra Op Injected inserting Put('a', 'a')")
-            self.extra_op = True
+            self.is_extra_op = True
         elif self.is_failure_truncate_history("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Completed check point shuttle Fault: Truncate history injected removing last entry from history")
             entries = getEntriesToTruncate("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
@@ -1132,11 +1119,11 @@ class Replica(process):
 
         if self.is_failure_crash("catch-up", str(-1), str(self.config_id)):
             output("Catch Up Fault: Crash Replica injected")
-            self.is_crash = True
+            crash()
         elif self.is_failure_sleep("catch-up", str(-1), str(self.config_id)) != -1:
             timer = self.is_failure_sleep("catch-up", str(-1), str(self.config_id))
             output("Catch Up Fault: Sleep injected for time:", timer, " seconds")
-            self.is_sleep = timer
+            sleep(timer)
 
         for i in range(len(catch_up_history)):
             ((action, result), proof) = catch_up_history[i]
@@ -1154,11 +1141,11 @@ class Replica(process):
 
         if self.is_failure_crash("get_running_state", str(-1), str(self.config_id)):
             output("Get running state Fault: Crash Replica injected")
-            self.is_crash = True
+            crash()
         elif self.is_failure_sleep("get_running_state", str(-1), str(self.config_id)) != -1:
             timer = self.is_failure_sleep("get_running_state", str(-1), str(self.config_id))
             output("Get running state Fault: Sleep injected for time:", timer, " seconds")
-            self.is_sleep = timer
+            sleep(timer)
 
         db_state = self.running_state_log[len(self.running_state_log)-1]
         output("[Replica",self.index,":]>> running-state")
