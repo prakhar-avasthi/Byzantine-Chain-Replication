@@ -30,9 +30,9 @@
 
 ## BUGS AND LIMITATIONS.  
    - **Limitations:**
-     - There can only be 1 PseudoRandom client.
+     - There can only be 1 PseudoRandom client otherwise result may not match
      - Two Clients can't have same keys.
-     - Buffer size should be 50000 bytes.
+     - Buffer size should be 10,00,000 bytes.
    
    - **Bugs:**
       - Title: Getting StackOverflow error in Replica, [Frequencey: Sometimes]
@@ -59,7 +59,6 @@
      - Implemented creating longest history and validating caught-up histories at Olympus.
      - Implemented "get-running-state", "running-state" request and response sequence at Replica and Olympus.
      - Implemented setting up of new configuration after reconfiguration.
-     - 
 
 2. Rajat Jain (@github/jainraj91) 50%
    - **Responsibilities:**
@@ -85,22 +84,31 @@
    - Client Code
 
 
+## Performance
+1. **Raft2.da**
+   - Timing: 9.32 seconds
+  
+2. **BCR (Main.da)**
+   - Single Host: 24.96 seconds
+   - Multi Host: 26.76 seconds
+
+
 ## CODE SIZE.
    - **Lines of Code(LOC)** 
     Github is used to obtain the LOC.
-     - Algorithm: 310 LOC
-     - Other: 470 LOC
-     - Total: 780 LOC
+     - Algorithm: 635 LOC
+     - Other: 962 LOC
+     - Total: 1597 LOC
    
    - **Estimates**
-     - Algorithm - 60% (186 LOC)
-     - Other functionality interleaved - 40% (124 LOC) 
+     - Algorithm - 60% (381 LOC)
+     - Other functionality interleaved - 40% (254 LOC) 
 
 
 ## LANGUAGE FEATURE USAGE. 
-- numbers of list comprehensions = 10
-- numbers of dictionary comprehensions = 11
-- numbers of set comprehensions - 7
+- numbers of list comprehensions = 17
+- numbers of dictionary comprehensions = 15
+- numbers of set comprehensions - 10
 - numbers of aggregations - 0
 - numbers of quantifications-0
 
