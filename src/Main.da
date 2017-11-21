@@ -61,13 +61,13 @@ class Olympus(process):
             output("[Olympus:]Reconfig request from old configuration, ignoring!")
 
     def receive(msg = ('wedged', database, history, checkpoint_proof, checkpoint_position, replica_id)):
-        output("[Olympus:]<< wegded from Replica: ", replica_id, " : History length: ", len(history), " : ChkPoint", checkpoint_position)
+        output("[Olympus:]<< wegded from Replica: ", replica_id)
 
         ## Fetch the unsigned history ##
         try:
             verify_key = nacl.signing.VerifyKey(self.replica_public_keys[replica_id], encoder=nacl.encoding.HexEncoder)
-            history_1 = pickle.loads(verify_key.verify(history))
-            history = history_1
+            history = pickle.loads(verify_key.verify(history))
+            output("[Olympus:] Replica: ", replica_id, ", len(history): ", len(history))
         except nacl.exceptions.BadSignatureError :
             return
 
@@ -289,7 +289,7 @@ class Replica(process):
         self.is_invalid_order_sig = False
         self.is_invalid_result_sig = False
         self.is_drop_shuttle = False
-        self.is_truncate_history = False
+        self.is_truncate_history = (False, -1)
         self.is_crash = False
         self.is_sleep = -1
         self.is_extra_op = False
@@ -304,16 +304,20 @@ class Replica(process):
         elif self.is_failure_crash("new_configuration", str(-1), str(self.config_id - 1)):
             output("New Configuration Fault: Crash Replica injected")
             self.is_crash = True
-        elif self.is_failure_sleep("new_configuration", str(-1), str(self.config_id)) != -1:
-            timer = self.is_failure_sleep("new_configuration", str(-1), str(self.config_id))
+        elif self.is_failure_sleep("new_configuration", str(-1), str(self.config_id - 1)) != -1:
+            timer = self.is_failure_sleep("new_configuration", str(-1), str(self.config_id - 1))
             output("New Configuration Fault: Sleep injected for time:", timer, " seconds")
             self.is_sleep = timer
-        elif self.is_failure_drop("new_configuration", str(-1), str(self.config_id)):
+        elif self.is_failure_drop("new_configuration", str(-1), str(self.config_id - 1)):
             output("New Configuration Fault: Drop message Injected")
             self.is_drop_shuttle = True
-        elif self.is_failure_extra_op("new_configuration", str(-1), str(self.config_id)):
+        elif self.is_failure_extra_op("new_configuration", str(-1), str(self.config_id - 1)):
             output("New Configuration Fault: Extra Op Injected inserting Put('a', 'a')")
             self.is_extra_op = True
+        elif self.is_failure_truncate_history("new_configuration", str(-1), str(self.config_id - 1)):
+            output("New Configuration Fault: Fault: Truncate history injected removing last entry from history")
+            entries = getEntriesToTruncate("new_configuration", str(-1), str(self.config_id - 1))
+            self.is_truncate_history = (True, entries)
         ######### Fault Injection ends ##################
 
     def run():
@@ -411,7 +415,8 @@ class Replica(process):
                     self.is_extra_op = False
                 elif self.is_failure_truncate_history("client_request", str(client_index), str(self.shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                    is_truncate_history = True
+                    entries = getEntriesToTruncate("client_request", str(client_index), str(self.shuttle_request[client_index]))
+                    self.is_truncate_history = (True, entries)
           #########################################################################################################
 
             check_point_time = False
@@ -447,10 +452,10 @@ class Replica(process):
 
             ##### Sign order statement, add to Order proof #######
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
-            if self.is_invalid_order_sig :
+            if self.is_invalid_order_sig:
                 signed_order_statement = invalid_sign(signed_order_statement)
                 self.is_invalid_order_sig = False
-            order_proof.append(signed_order_statement)
+            #order_proof.append(signed_order_statement)
 
 
             ###### Create result statement ######
@@ -467,7 +472,7 @@ class Replica(process):
             if self.is_invalid_result_sig :
                 signed_result_statement = invalid_sign(signed_result_statement)
                 self.is_invalid_result_sig = False
-            result_proof.append(signed_result_statement)
+            #result_proof.append(signed_result_statement)
 
             ## Failure injection scenario ##
             if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), message_number):
@@ -563,7 +568,8 @@ class Replica(process):
                 self.is_extra_op = False
             elif self.is_failure_truncate_history("shuttle", str(client_index), str(self.shuttle_request[client_index])):
                 output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                is_truncate_history = True
+                entries = getEntriesToTruncate("shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                self.is_truncate_history = (True, entries)
       #########################################################################################################
 
         ### normal replica will add its order and result statement
@@ -754,7 +760,8 @@ class Replica(process):
                     self.is_sleep = -1
                 elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                    is_truncate_history = True
+                    entries = getEntriesToTruncate("result_shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                    self.is_truncate_history = (True, entries)
           #########################################################################################################
 
             action = result_shuttle.action
@@ -868,7 +875,8 @@ class Replica(process):
             self.extra_op = True
         elif self.is_failure_truncate_history("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Check point shuttle Fault: Truncate history injected removing last entry from history")
-            is_truncate_history = True
+            entries = getEntriesToTruncate("checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
+            self.is_truncate_history = (True, entries)
         #########################################################################################################
 
         running_state = insert_entries(self.index)
@@ -958,7 +966,8 @@ class Replica(process):
             self.extra_op = True
         elif self.is_failure_truncate_history("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold))):
             output("Completed check point shuttle Fault: Truncate history injected removing last entry from history")
-            is_truncate_history = True
+            entries = getEntriesToTruncate("completed_checkpoint", str(-1), str(int(check_point_upto/check_point_threshold)))
+            self.is_truncate_history = (True, entries)
         #########################################################################################################
 
         self.completed_check_point_count += 1
@@ -1097,11 +1106,23 @@ class Replica(process):
             output("[Replica",self.index,":] Fault: Sleep Replica Injected on wedge request")
             timer = is_failure_sleep("wedge_request", '-1', str(self.config_id))
             sleep(timer)
-        elif is_failure_truncate_history("wedge_request", '-1', str(self.config_id)) or self.is_truncate_history:
-            entries_to_truncate = getEntriesToTruncate("wedge_request", '-1', str(self.config_id))
-            signed_history = self.private_key.sign(pickle.dumps(history[:len(history) - entries_to_truncate]))
-            send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
-            self.is_truncate_history = False
+        elif is_failure_truncate_history("wedge_request", '-1', str(self.config_id)) or self.is_truncate_history[0]:
+            entries_to_truncate = -1
+            if self.is_truncate_history[0]:
+                entries_to_truncate = self.is_truncate_history[1]
+            else:
+                entries_to_truncate = getEntriesToTruncate("wedge_request", '-1', str(self.config_id))
+
+            if entries_to_truncate >= 0:
+                if(len(history) > entries_to_truncate):
+                    signed_history = self.private_key.sign(pickle.dumps(history[:len(history) - entries_to_truncate]))
+                else:
+                    signed_history = self.private_key.sign(pickle.dumps([]))
+                output("[Replica",self.index,":] Fault: Truncate History: entries_to_truncate: ", entries_to_truncate, ", len(history): ", len(history))
+                send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
+                self.is_truncate_history = (False, -1)
+            else:
+                output("Entries to truncate is invalid i.e. -1")
         else:
             signed_history = self.private_key.sign(pickle.dumps(history))
             send(('wedged', database, signed_history, self.checkpoint_proof, self.checkpoint_position, index), to = olympus)
@@ -1274,7 +1295,7 @@ class Replica(process):
                     if (type, (client, message)) == (source, (c,m)):
                         return int(key[key.find("(")+1:key.find(")")])
                     else:
-                        return False
+                        return -1
             return False
         except KeyError:
             return False
