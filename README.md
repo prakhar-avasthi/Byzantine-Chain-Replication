@@ -38,7 +38,7 @@
       - Title: Getting StackOverflow error in Replica, [Frequencey: Sometimes]
 
 ## CONTRIBUTIONS.
-1. Prakhar Avasthi (@github/prakhar-avasthi)
+1. Prakhar Avasthi (@github/prakhar-avasthi) 50%
    - **Responsibilities:**
      - Implemented Initial Client, Olympus, Replica Processes and their communication.
      - Implemented Sending operations from Client to Replica and performing dictionary operation at Replica.
@@ -52,7 +52,7 @@
      - Ran the program on multiple hosts.
      - Written README.md
 
-2. Rajat Jain (@github/jainraj91)
+2. Rajat Jain (@github/jainraj91) 50%
    - **Responsibilities:**
      - Implemented initial required class files.
      - Implemented head, replica and tail related functionalities in Replica node.
