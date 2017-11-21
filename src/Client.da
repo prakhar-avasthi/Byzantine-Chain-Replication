@@ -162,6 +162,7 @@ class Client(process):
                 discard_flag = False
             else:
                 output("[Client",index,":]<< res_operation: ", operation.toString() ," Result: ", result, " ignoring as request is timed-out already.")
+
     def receive (msg= ('res_operation_timeout', operation, result_proof, result, replica, replica_index, error)):
         if error is None:
             output("Client",index,":<< res_operation_timeout: ", operation.toString() ," Result: ", result, ", Replica: ", replica_index)

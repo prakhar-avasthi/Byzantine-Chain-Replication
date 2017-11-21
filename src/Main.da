@@ -1414,7 +1414,12 @@ def main():
             failure_list.append((key,config[key]))
 
     olympus_node = 'OlympusNode' + '@' + ip if ip is not None else 'OlympusNode'
-    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], config['checkpt_interval'], failure_list), at=olympus_node)
+    checkpoint = 30
+    try:
+        checkpoint = config['checkpt_interval']
+    except:
+        checkpoint = 30
+    olympus = new(Olympus, args=(num_replica, config['head_timeout'], config['nonhead_timeout'], checkpoint, failure_list), at=olympus_node)
     clientList = new(class_client.Client, num= config['num_client'])
     i = 0
     for client in clientList:
