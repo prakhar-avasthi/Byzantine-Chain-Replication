@@ -51,6 +51,15 @@
      - Implemented dictionary validation after end of test case.
      - Ran the program on multiple hosts.
      - Written README.md
+     - Implemented checking of whether configuration has changed at Olympus or not as Needed.
+     - Implemented sending reconfiguration request in case of misbehaviour.
+     - Implemented sending reconfiguration request in case of Replica timeout when waiting for retransmit.
+     - Implemented "Wedge"-"Wedged" request and response sequence at Replica and Olympus.
+     - Implemented "Catch-up"-"Caught-up" request and response sequence at Replica and Olympus.
+     - Implemented creating longest history and validating caught-up histories at Olympus.
+     - Implemented "get-running-state", "running-state" request and response sequence at Replica and Olympus.
+     - Implemented setting up of new configuration after reconfiguration.
+     - 
 
 2. Rajat Jain (@github/jainraj91) 50%
    - **Responsibilities:**
