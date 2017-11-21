@@ -388,7 +388,7 @@ class Replica(process):
             message_number = str(self.direct_client_request[client_index])
 
             ################################ Failure Injections for phase 3 #######################################
-            if client_index in self.shuttle_request :
+            if client_index in self.direct_client_request :
                 if self.is_failure_invalid_order_sig("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("[Replica",self.index,":] Fault: Invalid Order Sig injected")
                     self.is_invalid_order_sig = True
@@ -413,9 +413,9 @@ class Replica(process):
                     output("[Replica",self.index,":] Fault: Extra Op Injected inserting Put('a', 'a')")
                     extra_op(None, "head")
                     self.is_extra_op = False
-                elif self.is_failure_truncate_history("client_request", str(client_index), str(self.shuttle_request[client_index])):
+                elif self.is_failure_truncate_history("client_request", str(client_index), str(self.direct_client_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                    entries = getEntriesToTruncate("client_request", str(client_index), str(self.shuttle_request[client_index]))
+                    entries = getEntriesToTruncate("client_request", str(client_index), str(self.direct_client_request[client_index]))
                     self.is_truncate_history = (True, entries)
           #########################################################################################################
 
@@ -475,7 +475,7 @@ class Replica(process):
             #result_proof.append(signed_result_statement)
 
             ## Failure injection scenario ##
-            if client_index in self.shuttle_request and self.is_failure_change_result("client_request", str(client_index), message_number):
+            if client_index in self.direct_client_request and self.is_failure_change_result("client_request", str(client_index), message_number):
                 output("[Replica",self.index,":] Fault: Change Result,Client ", client_index, ", Request ",message_number)
                 temp_result = "OK"
 
@@ -486,7 +486,7 @@ class Replica(process):
                 ## re-sign the result_statement and replace it in result_proof
                 signed_result_statement = self.private_key.sign(pickle.dumps(unsigned_result_statement))
 
-            elif client_index in self.shuttle_request and self.is_failure_drop_result_stmt("client_request", str(client_index), message_number):
+            elif client_index in self.direct_client_request and self.is_failure_drop_result_stmt("client_request", str(client_index), message_number):
                 output("[Replica",self.index,":] Fault: Omit Head Result, Client ", client_index, ", Request ",self.direct_client_request[client_index])
                 del result_proof[0]
 
@@ -741,26 +741,30 @@ class Replica(process):
 
         ##### if result proof is valid, add in history ######
         if is_valid  and state == 'ACTIVE':
-
+            ## fault injection case
+            try:
+                self.result_shuttle_request[client_index] += 1
+            except KeyError:
+                self.result_shuttle_request[client_index] = 1
             ################################ Failure Injections for phase 3 #######################################
-            if client_index in self.shuttle_request :
-                if self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+            if client_index in self.result_shuttle_request :
+                if self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Invalid Result Sig injected")
                     self.is_invalid_result_sig = True
-                elif self.is_failure_crash("shuttle", str(client_index), str(self.shuttle_request[client_index])) or self.is_crash:
+                elif self.is_failure_crash("shuttle", str(client_index), str(self.result_shuttle_request[client_index])) or self.is_crash:
                     output("[Replica",self.index,":] Fault: Crash Replica injected")
                     crash()
                     self.is_crash = False
-                elif self.is_failure_sleep("result_shuttle", str(client_index), str(self.shuttle_request[client_index])) != -1 or self.is_sleep > -1:
+                elif self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])) != -1 or self.is_sleep > -1:
                     timer = self.is_sleep
                     if timer == -1:
-                        timer = self.is_failure_sleep("result_shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                        timer = self.is_failure_sleep("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index]))
                     output("[Replica",self.index,":] Fault: Sleep injected for time:", timer, " seconds")
                     sleep(timer)
                     self.is_sleep = -1
-                elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.shuttle_request[client_index])):
+                elif self.is_failure_truncate_history("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
                     output("[Replica",self.index,":] Fault: Truncate history injected removing last entry from history")
-                    entries = getEntriesToTruncate("result_shuttle", str(client_index), str(self.shuttle_request[client_index]))
+                    entries = getEntriesToTruncate("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index]))
                     self.is_truncate_history = (True, entries)
           #########################################################################################################
 
@@ -780,11 +784,6 @@ class Replica(process):
 
 
             output("[Replica",self.index,":]<< Result Shuttle: ", action.operation.toString(), " to Replica: ", index+1)
-            ## fault injection case
-            try:
-                self.result_shuttle_request[client_index] += 1
-            except KeyError:
-                self.result_shuttle_request[client_index] = 1
 
             ## fault injection scenario
             if client_index in self.shuttle_request\
