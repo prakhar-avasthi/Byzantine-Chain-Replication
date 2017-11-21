@@ -1,0 +1,406 @@
+[2017-11-21 03:14:21,365] da.api<MainProcess>:INFO: Bootstrapping attempt failed due to BootstrapException('Unable to contact a peer node.',),  continuing as a master node (use '--master' to disable bootstrapping at startup).
+[2017-11-21 03:14:21,366] da.api<MainProcess>:INFO: <Node_:ClientNode> initialized at 127.0.0.1:(UdpTransport=15000, TcpTransport=15000).
+[2017-11-21 03:14:21,366] da.api<MainProcess>:INFO: Starting program <module 'Main' from 'src/Main.py'>...
+[2017-11-21 03:14:21,366] da.api<MainProcess>:INFO: Running iteration 1 ...
+[2017-11-21 03:14:21,367] da.api<MainProcess>:INFO: Waiting for remaining child processes to terminate...(Press "Ctrl-C" to force kill)
+[2017-11-21 03:14:21,385] Main.Node_<Node_:ClientNode>:INFO: Waiting to resolve name 'OlympusNode'...
+[2017-11-21 03:14:23,498] da.sim.Router<MainProcess>:INFO: Bootstrap succeeded using <UdpTransport(127.0.0.1:22338)>.
+[2017-11-21 03:14:23,514] da.api<MainProcess>:INFO: <Node_:OlympusNode> initialized at 127.0.0.1:(UdpTransport=22338, TcpTransport=17955).
+[2017-11-21 03:14:23,514] da.api<MainProcess>:INFO: Starting program <module 'Main' from 'src/Main.py'>...
+[2017-11-21 03:14:23,515] da.api<MainProcess>:INFO: Running iteration 1 ...
+[2017-11-21 03:14:23,516] da.api<MainProcess>:INFO: Waiting for remaining child processes to terminate...(Press "Ctrl-C" to force kill)
+[2017-11-21 03:14:23,596] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Setup
+[2017-11-21 03:14:23,669] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Workload:  put('jedi','luke skywalker'); slice('jedi','0:4'); get('jedi'); put('hakuna','matata'); slice('hakuna','0:4'); get('hakuna'); put('andi','mandi sandi'); slice('andi','0:4'); get('andi')
+[2017-11-21 03:14:23,672] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Started
+[2017-11-21 03:14:23,700] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Started
+[2017-11-21 03:14:23,707] da.api<MainProcess>:INFO: Main process terminated.
+[2017-11-21 03:14:23,733] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-11-21 03:14:23,733] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Making New Configuration
+[2017-11-21 03:14:23,844] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:23,872] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {'change_operation()': ('shuttle', ('0', '1'))}
+[2017-11-21 03:14:23,890] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:23,911] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :] Started:  head ACTIVE 0
+[2017-11-21 03:14:23,916] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] Started:  normal_replica ACTIVE 0
+[2017-11-21 03:14:23,941] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :] Started:  tail ACTIVE 0
+[2017-11-21 03:14:23,941] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-11-21 03:14:23,960] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_get_current_configuration
+[2017-11-21 03:14:23,961] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('jedi','luke skywalker')  : config:  0
+[2017-11-21 03:14:23,978] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('jedi','luke skywalker')  Client:  0
+[2017-11-21 03:14:23,979] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: Slot:  1  : Operation:  put('jedi','luke skywalker')
+[2017-11-21 03:14:23,980] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('jedi','luke skywalker')
+[2017-11-21 03:14:23,981] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('jedi','luke skywalker') , result:  OK
+[2017-11-21 03:14:23,985] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-11-21 03:14:24,005] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:14:24,006] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('jedi','luke skywalker')  from Replica:  0
+[2017-11-21 03:14:24,008] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] Fault: Change Operation, Client  0 , Request  1
+[2017-11-21 03:14:24,008] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] !!!!!! Changing operation from  ('jedi','luke skywalker')  to get('X') !!!!!!!
+[2017-11-21 03:14:24,009] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('X')
+[2017-11-21 03:14:24,010] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('X') , result:  
+[2017-11-21 03:14:24,010] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] Successfully injected fault: Change operation
+[2017-11-21 03:14:24,012] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('X')  to Replica:  2
+[2017-11-21 03:14:24,034] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:14:24,034] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('X')  from Replica:  1
+[2017-11-21 03:14:24,035] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :] Result doesnot match so returning false
+[2017-11-21 03:14:24,036] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :] Invalid Order Proof, Sending Reconfig request. Become Immutable
+[2017-11-21 03:14:24,037] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_re_configuration
+[2017-11-21 03:14:24,037] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  0
+[2017-11-21 03:14:24,038] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  1
+[2017-11-21 03:14:24,039] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  2
+[2017-11-21 03:14:24,039] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]<< wedge
+[2017-11-21 03:14:24,039] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]>> wedged
+[2017-11-21 03:14:24,040] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< wedge
+[2017-11-21 03:14:24,041] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]>> wedged
+[2017-11-21 03:14:24,041] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]<< wedge
+[2017-11-21 03:14:24,041] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< wegded from Replica:  0
+[2017-11-21 03:14:24,041] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]>> wedged
+[2017-11-21 03:14:24,042] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Replica:  0 , len(history):  0
+[2017-11-21 03:14:24,043] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Total received:  1
+[2017-11-21 03:14:24,043] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< wegded from Replica:  1
+[2017-11-21 03:14:24,044] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Replica:  1 , len(history):  0
+[2017-11-21 03:14:24,044] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Total received:  2
+[2017-11-21 03:14:24,044] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History
+[2017-11-21 03:14:24,045] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest Database:  {'jedi': 'luke skywalker'}
+[2017-11-21 03:14:24,047] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]<< catch-up
+[2017-11-21 03:14:24,047] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :] catch-up History
+[2017-11-21 03:14:24,048] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]>> caught-up
+[2017-11-21 03:14:24,048] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< catch-up
+[2017-11-21 03:14:24,048] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :] catch-up History
+[2017-11-21 03:14:24,048] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< wegded from Replica:  2
+[2017-11-21 03:14:24,048] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]>> caught-up
+[2017-11-21 03:14:24,049] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Replica:  2 , len(history):  0
+[2017-11-21 03:14:24,050] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Total received:  1
+[2017-11-21 03:14:24,050] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< caught-up from Replica:  0  : database:  {'jedi': 'luke skywalker'}
+[2017-11-21 03:14:24,051] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< caught-up from Replica:  1  : database:  {}
+[2017-11-21 03:14:24,051] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]Incorrect caught-up history: Not including Replica :  1  in Quoram
+[2017-11-21 03:14:24,052] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]<< catch-up
+[2017-11-21 03:14:24,053] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :] catch-up History
+[2017-11-21 03:14:24,053] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]>> caught-up
+[2017-11-21 03:14:24,056] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< caught-up from Replica:  2  : database:  {}
+[2017-11-21 03:14:24,056] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]Incorrect caught-up history: Not including Replica :  2  in Quoram
+[2017-11-21 03:14:24,056] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< Longest history might be of byzantine
+[2017-11-21 03:14:24,057] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> get-running-state to Replica:  1
+[2017-11-21 03:14:24,058] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< get-running-state
+[2017-11-21 03:14:24,059] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]>> running-state
+[2017-11-21 03:14:24,060] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< running-state from Replica:  1  : database:  {}
+[2017-11-21 03:14:24,060] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< running-state matching with caught-up history
+[2017-11-21 03:14:24,060] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Making New Configuration
+[2017-11-21 03:14:24,142] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:24,168] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {'crash()': ('checkpoint', ('-1', '1'))}
+[2017-11-21 03:14:24,186] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:24,206] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Started:  head ACTIVE 1
+[2017-11-21 03:14:24,212] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Started:  normal_replica ACTIVE 1
+[2017-11-21 03:14:24,232] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Started:  tail ACTIVE 1
+[2017-11-21 03:14:24,233] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] New configuration created
+[2017-11-21 03:14:33,977] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Client Timeout.
+[2017-11-21 03:14:33,978] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  0 put('jedi','luke skywalker')  : config:  0
+[2017-11-21 03:14:33,979] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  1 put('jedi','luke skywalker')  : config:  0
+[2017-11-21 03:14:33,981] Main.Replica<Replica:c0405#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation_timeout: IMMUTABLE:  put('jedi','luke skywalker')  Client:  0
+[2017-11-21 03:14:33,998] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  2 put('jedi','luke skywalker')  : config:  0
+[2017-11-21 03:14:34,000] Main.Replica<Replica:c0403#OlympusNode>:OUTPUT: [Replica 1 :]<< req_operation_timeout: IMMUTABLE:  put('jedi','luke skywalker')  Client:  0
+[2017-11-21 03:14:34,031] Main.Replica<Replica:c0404#OlympusNode>:OUTPUT: [Replica 2 :]<< req_operation_timeout: IMMUTABLE:  put('jedi','luke skywalker')  Client:  0
+[2017-11-21 03:14:34,049] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Replica:  1  is Immutable, Request  new configuration
+[2017-11-21 03:14:34,050] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> error_in_replica:  1
+[2017-11-21 03:14:34,050] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_get_current_configuration
+[2017-11-21 03:14:34,052] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Replica:  0  is Immutable, Request  new configuration
+[2017-11-21 03:14:34,053] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-11-21 03:14:34,053] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-11-21 03:14:34,067] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_get_current_configuration
+[2017-11-21 03:14:34,069] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> Sending to new config 
+[2017-11-21 03:14:34,070] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('jedi','luke skywalker')  : config:  1
+[2017-11-21 03:14:34,084] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Replica:  2  is Immutable, Request  new configuration
+[2017-11-21 03:14:34,091] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('jedi','luke skywalker')  Client:  0
+[2017-11-21 03:14:34,093] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  1  : Operation:  put('jedi','luke skywalker')
+[2017-11-21 03:14:34,095] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('jedi','luke skywalker')
+[2017-11-21 03:14:34,095] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('jedi','luke skywalker') , result:  OK
+[2017-11-21 03:14:34,098] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-11-21 03:14:34,114] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:14:34,114] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('jedi','luke skywalker')  from Replica:  0
+[2017-11-21 03:14:34,116] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('jedi','luke skywalker')
+[2017-11-21 03:14:34,116] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('jedi','luke skywalker') , result:  OK
+[2017-11-21 03:14:34,118] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('jedi','luke skywalker')  to Replica:  2
+[2017-11-21 03:14:34,139] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:14:34,140] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('jedi','luke skywalker')  from Replica:  1
+[2017-11-21 03:14:34,142] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('jedi','luke skywalker')
+[2017-11-21 03:14:34,142] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('jedi','luke skywalker') , result:  OK
+[2017-11-21 03:14:34,159] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('jedi','luke skywalker')  result:  OK
+[2017-11-21 03:14:34,161] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-11-21 03:14:34,163] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('jedi','luke skywalker')  Result:  OK
+[2017-11-21 03:14:34,164] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('jedi','0:4')  : config:  1
+[2017-11-21 03:14:34,171] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('jedi','0:4')  Client:  0
+[2017-11-21 03:14:34,172] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  2  : Operation:  slice('jedi','0:4')
+[2017-11-21 03:14:34,174] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('jedi','0:4')
+[2017-11-21 03:14:34,174] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('jedi','0:4') , result:  OK
+[2017-11-21 03:14:34,177] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-11-21 03:14:34,177] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('jedi','luke skywalker')  to Replica:  2
+[2017-11-21 03:14:34,178] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('jedi','luke skywalker')  to Replica:  0
+[2017-11-21 03:14:34,191] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  2 , len :  2
+[2017-11-21 03:14:34,192] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('jedi','0:4')  from Replica:  0
+[2017-11-21 03:14:34,193] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('jedi','0:4')
+[2017-11-21 03:14:34,194] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('jedi','0:4') , result:  OK
+[2017-11-21 03:14:34,194] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('jedi','luke skywalker')  to Replica:  1
+[2017-11-21 03:14:34,196] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('jedi','0:4')  to Replica:  2
+[2017-11-21 03:14:34,203] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  2 , len :  2
+[2017-11-21 03:14:34,203] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('jedi','0:4')  from Replica:  1
+[2017-11-21 03:14:34,205] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('jedi','0:4')
+[2017-11-21 03:14:34,205] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('jedi','0:4') , result:  OK
+[2017-11-21 03:14:34,207] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('jedi','0:4')  result:  OK
+[2017-11-21 03:14:34,209] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-11-21 03:14:34,209] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  slice('jedi','0:4')  Result:  OK
+[2017-11-21 03:14:34,210] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  get('jedi')  : config:  1
+[2017-11-21 03:14:34,213] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('jedi')  Client:  0
+[2017-11-21 03:14:34,213] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  3  : Operation:  get('jedi')
+[2017-11-21 03:14:34,213] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('jedi','0:4')  to Replica:  2
+[2017-11-21 03:14:34,213] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('jedi','0:4')  to Replica:  0
+[2017-11-21 03:14:34,214] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('jedi')
+[2017-11-21 03:14:34,214] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('jedi') , result:  luke
+[2017-11-21 03:14:34,217] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('jedi')  to Replica:  1
+[2017-11-21 03:14:34,220] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('jedi','0:4')  to Replica:  1
+[2017-11-21 03:14:34,220] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  3 , len :  3
+[2017-11-21 03:14:34,220] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('jedi')  from Replica:  0
+[2017-11-21 03:14:34,221] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('jedi')
+[2017-11-21 03:14:34,222] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('jedi') , result:  luke
+[2017-11-21 03:14:34,223] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('jedi')  to Replica:  2
+[2017-11-21 03:14:34,245] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  3 , len :  3
+[2017-11-21 03:14:34,245] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('jedi')  from Replica:  1
+[2017-11-21 03:14:34,248] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('jedi')
+[2017-11-21 03:14:34,248] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('jedi') , result:  luke
+[2017-11-21 03:14:34,251] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('jedi')  result:  luke
+[2017-11-21 03:14:34,255] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('jedi')  to Replica:  1
+[2017-11-21 03:14:34,255] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  get('jedi')  Result:  luke
+[2017-11-21 03:14:34,256] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('hakuna','matata')  : config:  1
+[2017-11-21 03:14:34,258] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('hakuna','matata')  Client:  0
+[2017-11-21 03:14:34,259] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  4  : Operation:  put('hakuna','matata')
+[2017-11-21 03:14:34,259] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('jedi')  to Replica:  2
+[2017-11-21 03:14:34,259] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('jedi')  to Replica:  0
+[2017-11-21 03:14:34,260] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('hakuna','matata')
+[2017-11-21 03:14:34,261] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('hakuna','matata') , result:  OK
+[2017-11-21 03:14:34,262] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('hakuna','matata')  to Replica:  1
+[2017-11-21 03:14:34,264] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  4 , len :  4
+[2017-11-21 03:14:34,265] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('hakuna','matata')  from Replica:  0
+[2017-11-21 03:14:34,266] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('jedi')  to Replica:  1
+[2017-11-21 03:14:34,266] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('hakuna','matata')
+[2017-11-21 03:14:34,267] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('hakuna','matata') , result:  OK
+[2017-11-21 03:14:34,268] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('hakuna','matata')  to Replica:  2
+[2017-11-21 03:14:34,269] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Sending Check Point Shuttle: to Replica:  1
+[2017-11-21 03:14:34,272] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: [Replica 1 ]: Received check point shuttle:  3
+[2017-11-21 03:14:34,272] Main.Replica<Replica:c0406#OlympusNode>:OUTPUT: Check point shuttle Fault: Crash Replica injected
+[2017-11-21 03:14:34,272] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  4 , len :  4
+[2017-11-21 03:14:34,273] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('hakuna','matata')  from Replica:  1
+[2017-11-21 03:14:34,274] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('hakuna','matata')
+[2017-11-21 03:14:34,274] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('hakuna','matata') , result:  OK
+[2017-11-21 03:14:34,277] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('hakuna','matata')  result:  OK
+[2017-11-21 03:14:34,279] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('hakuna','matata')  to Replica:  1
+[2017-11-21 03:14:34,284] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('hakuna','matata')  Result:  OK
+[2017-11-21 03:14:34,285] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:14:34,288] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:14:34,289] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  5  : Operation:  slice('hakuna','0:4')
+[2017-11-21 03:14:34,289] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4')
+[2017-11-21 03:14:34,289] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4') , result:  OK
+[2017-11-21 03:14:34,291] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('hakuna','0:4')  to Replica:  1
+[2017-11-21 03:14:34,292] da.sim.Router<OSProcessContainer-1:6>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:14:44,286] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Client Timeout.
+[2017-11-21 03:14:44,288] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  0 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:14:44,289] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  1 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:14:44,291] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation_timeout:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:14:44,291] da.sim.Router<OSProcessContainer-1>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:14:44,292] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  2 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:14:44,312] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< req_operation_timeout:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:14:44,313] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation_timeout:  slice('hakuna','0:4')  to Head Replica
+[2017-11-21 03:14:44,332] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation_timeout:  slice('hakuna','0:4')  from Replica[no history], Client:  0
+[2017-11-21 03:14:54,311] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Not received from Quoram, Terminate System.
+[2017-11-21 03:14:54,311] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_get_current_configuration
+[2017-11-21 03:14:54,313] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-11-21 03:14:54,314] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-11-21 03:14:54,315] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_get_current_configuration
+[2017-11-21 03:14:54,316] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> Sending to new config 
+[2017-11-21 03:14:54,317] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:14:54,320] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:14:54,320] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: Slot:  6  : Operation:  slice('hakuna','0:4')
+[2017-11-21 03:14:54,321] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4')
+[2017-11-21 03:14:54,322] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4') , result:  OK
+[2017-11-21 03:14:54,325] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('hakuna','0:4')  to Replica:  1
+[2017-11-21 03:14:54,326] da.sim.Router<OSProcessContainer-1:6>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:14:54,331] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] Timeout!! Sending Reconfig Request
+[2017-11-21 03:14:54,333] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_re_configuration
+[2017-11-21 03:14:54,333] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  0
+[2017-11-21 03:14:54,334] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  1
+[2017-11-21 03:14:54,335] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] Timeout!! Sending Reconfig Request
+[2017-11-21 03:14:54,335] da.sim.Router<OSProcessContainer-1>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:14:54,336] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> Killing Timer
+[2017-11-21 03:14:54,336] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> wedge to Replica:  2
+[2017-11-21 03:14:54,337] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< wedge
+[2017-11-21 03:14:54,338] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_re_configuration
+[2017-11-21 03:14:54,339] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]Reconfig request from old configuration, ignoring!
+[2017-11-21 03:14:54,337] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> wedged
+[2017-11-21 03:14:54,342] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< wedge
+[2017-11-21 03:14:54,342] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> wedged
+[2017-11-21 03:14:54,349] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< wegded from Replica:  0
+[2017-11-21 03:14:54,354] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Replica:  0 , len(history):  3
+[2017-11-21 03:14:54,354] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Total received:  1
+[2017-11-21 03:14:54,355] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< wegded from Replica:  2
+[2017-11-21 03:14:54,357] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Replica:  2 , len(history):  4
+[2017-11-21 03:14:54,357] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Total received:  2
+[2017-11-21 03:14:54,358] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History
+[2017-11-21 03:14:54,358] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History: Slot:  1 , Operation:  put('jedi','luke skywalker')
+[2017-11-21 03:14:54,358] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History: Slot:  2 , Operation:  slice('jedi','0:4')
+[2017-11-21 03:14:54,358] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History: Slot:  3 , Operation:  get('jedi')
+[2017-11-21 03:14:54,358] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest History: Slot:  4 , Operation:  put('hakuna','matata')
+[2017-11-21 03:14:54,359] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Longest Database:  {'hakuna': 'matata', 'jedi': 'luke'}
+[2017-11-21 03:14:54,361] da.sim.Router<OSProcessContainer-1>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:14:54,361] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< catch-up
+[2017-11-21 03:14:54,361] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] catch-up History
+[2017-11-21 03:14:54,362] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :] catch-up History: Slot:  4 , operation:  put('hakuna','matata')
+[2017-11-21 03:14:54,362] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> catchUpWithLongestHistory:  (4, {'hakuna': 'matata', 'jedi': 'luke'})
+[2017-11-21 03:14:54,362] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]>> caught-up
+[2017-11-21 03:14:54,363] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< catch-up
+[2017-11-21 03:14:54,363] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< caught-up from Replica:  0  : database:  {'hakuna': 'matata', 'jedi': 'luke'}
+[2017-11-21 03:14:54,363] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :] catch-up History
+[2017-11-21 03:14:54,364] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]>> caught-up
+[2017-11-21 03:14:54,365] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< caught-up from Replica:  2  : database:  {'hakuna': 'matata', 'jedi': 'luke'}
+[2017-11-21 03:14:54,365] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:] Making New Configuration
+[2017-11-21 03:14:54,445] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:54,461] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:54,475] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: failure map is : {}
+[2017-11-21 03:14:54,492] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Started:  head ACTIVE 2
+[2017-11-21 03:14:54,512] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Started:  normal_replica ACTIVE 2
+[2017-11-21 03:14:54,522] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Started:  tail ACTIVE 2
+[2017-11-21 03:15:04,319] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Client Timeout.
+[2017-11-21 03:15:04,320] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  0 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:15:04,322] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  1 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:15:04,323] da.sim.Router<OSProcessContainer-1>:ERROR: Could not send message due to: TransportException("connection refused by ('127.0.0.1', 17610)",)
+[2017-11-21 03:15:04,324] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation_timeout: Replica:  2 slice('hakuna','0:4')  : config:  1
+[2017-11-21 03:15:04,324] Main.Replica<Replica:c0408#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation_timeout: IMMUTABLE:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:15:04,327] Main.Replica<Replica:c0407#OlympusNode>:OUTPUT: [Replica 2 :]<< req_operation_timeout: IMMUTABLE:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:15:04,341] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Replica:  2  is Immutable, Request  new configuration
+[2017-11-21 03:15:04,341] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> error_in_replica:  1
+[2017-11-21 03:15:04,342] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_get_current_configuration
+[2017-11-21 03:15:04,343] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Replica:  0  is Immutable, Request  new configuration
+[2017-11-21 03:15:04,343] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]<< req_get_current_configuration
+[2017-11-21 03:15:04,344] Main.Olympus<Olympus:c0402#OlympusNode>:OUTPUT: [Olympus:]>> res_get_current_configuration
+[2017-11-21 03:15:04,345] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_get_current_configuration
+[2017-11-21 03:15:04,345] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> Sending to new config 
+[2017-11-21 03:15:04,346] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('hakuna','0:4')  : config:  2
+[2017-11-21 03:15:04,362] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('hakuna','0:4')  Client:  0
+[2017-11-21 03:15:04,363] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: Slot:  1  : Operation:  slice('hakuna','0:4')
+[2017-11-21 03:15:04,364] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4')
+[2017-11-21 03:15:04,365] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('hakuna','0:4') , result:  OK
+[2017-11-21 03:15:04,369] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('hakuna','0:4')  to Replica:  1
+[2017-11-21 03:15:04,385] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:15:04,385] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('hakuna','0:4')  from Replica:  0
+[2017-11-21 03:15:04,388] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('hakuna','0:4')
+[2017-11-21 03:15:04,388] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('hakuna','0:4') , result:  OK
+[2017-11-21 03:15:04,390] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('hakuna','0:4')  to Replica:  2
+[2017-11-21 03:15:04,406] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  1 , len :  1
+[2017-11-21 03:15:04,407] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('hakuna','0:4')  from Replica:  1
+[2017-11-21 03:15:04,409] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('hakuna','0:4')
+[2017-11-21 03:15:04,409] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('hakuna','0:4') , result:  OK
+[2017-11-21 03:15:04,425] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('hakuna','0:4')  result:  OK
+[2017-11-21 03:15:04,429] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  slice('hakuna','0:4')  Result:  OK
+[2017-11-21 03:15:04,430] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('hakuna','0:4')  to Replica:  1
+[2017-11-21 03:15:04,430] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  get('hakuna')  : config:  2
+[2017-11-21 03:15:04,433] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('hakuna')  Client:  0
+[2017-11-21 03:15:04,433] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: Slot:  2  : Operation:  get('hakuna')
+[2017-11-21 03:15:04,437] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('hakuna')
+[2017-11-21 03:15:04,438] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('hakuna') , result:  mata
+[2017-11-21 03:15:04,443] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('hakuna')  to Replica:  1
+[2017-11-21 03:15:04,450] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  2 , len :  2
+[2017-11-21 03:15:04,451] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('hakuna')  from Replica:  0
+[2017-11-21 03:15:04,452] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('hakuna')
+[2017-11-21 03:15:04,452] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('hakuna') , result:  mata
+[2017-11-21 03:15:04,453] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('hakuna')  to Replica:  2
+[2017-11-21 03:15:04,456] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  2 , len :  2
+[2017-11-21 03:15:04,456] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('hakuna')  from Replica:  1
+[2017-11-21 03:15:04,456] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('hakuna','0:4')  to Replica:  2
+[2017-11-21 03:15:04,457] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('hakuna','0:4')  to Replica:  0
+[2017-11-21 03:15:04,458] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('hakuna')
+[2017-11-21 03:15:04,459] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('hakuna') , result:  mata
+[2017-11-21 03:15:04,461] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('hakuna')  result:  mata
+[2017-11-21 03:15:04,464] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  get('hakuna')  Result:  mata
+[2017-11-21 03:15:04,465] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  put('andi','mandi sandi')  : config:  2
+[2017-11-21 03:15:04,465] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('hakuna')  to Replica:  1
+[2017-11-21 03:15:04,477] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('hakuna')  to Replica:  2
+[2017-11-21 03:15:04,478] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('hakuna')  to Replica:  0
+[2017-11-21 03:15:04,479] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  put('andi','mandi sandi')  Client:  0
+[2017-11-21 03:15:04,480] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: Slot:  3  : Operation:  put('andi','mandi sandi')
+[2017-11-21 03:15:04,480] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('andi','mandi sandi')
+[2017-11-21 03:15:04,480] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  put('andi','mandi sandi') , result:  OK
+[2017-11-21 03:15:04,482] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  put('andi','mandi sandi')  to Replica:  1
+[2017-11-21 03:15:04,486] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('hakuna','0:4')  to Replica:  1
+[2017-11-21 03:15:04,488] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('hakuna')  to Replica:  1
+[2017-11-21 03:15:04,489] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  3 , len :  3
+[2017-11-21 03:15:04,489] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  put('andi','mandi sandi')  from Replica:  0
+[2017-11-21 03:15:04,491] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('andi','mandi sandi')
+[2017-11-21 03:15:04,491] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  put('andi','mandi sandi') , result:  OK
+[2017-11-21 03:15:04,492] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  put('andi','mandi sandi')  to Replica:  2
+[2017-11-21 03:15:04,497] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  3 , len :  3
+[2017-11-21 03:15:04,497] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  put('andi','mandi sandi')  from Replica:  1
+[2017-11-21 03:15:04,499] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('andi','mandi sandi')
+[2017-11-21 03:15:04,500] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  put('andi','mandi sandi') , result:  OK
+[2017-11-21 03:15:04,505] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  put('andi','mandi sandi')  Result:  OK
+[2017-11-21 03:15:04,506] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  put('andi','mandi sandi')  result:  OK
+[2017-11-21 03:15:04,507] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  slice('andi','0:4')  : config:  2
+[2017-11-21 03:15:04,508] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  put('andi','mandi sandi')  to Replica:  1
+[2017-11-21 03:15:04,511] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  slice('andi','0:4')  Client:  0
+[2017-11-21 03:15:04,511] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  put('andi','mandi sandi')  to Replica:  2
+[2017-11-21 03:15:04,512] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: Slot:  4  : Operation:  slice('andi','0:4')
+[2017-11-21 03:15:04,512] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  put('andi','mandi sandi')  to Replica:  0
+[2017-11-21 03:15:04,512] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('andi','0:4')
+[2017-11-21 03:15:04,513] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  slice('andi','0:4') , result:  OK
+[2017-11-21 03:15:04,514] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  slice('andi','0:4')  to Replica:  1
+[2017-11-21 03:15:04,517] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  4 , len :  4
+[2017-11-21 03:15:04,517] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  slice('andi','0:4')  from Replica:  0
+[2017-11-21 03:15:04,519] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('andi','0:4')
+[2017-11-21 03:15:04,519] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  slice('andi','0:4') , result:  OK
+[2017-11-21 03:15:04,521] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  slice('andi','0:4')  to Replica:  2
+[2017-11-21 03:15:04,523] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  4 , len :  4
+[2017-11-21 03:15:04,524] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  slice('andi','0:4')  from Replica:  1
+[2017-11-21 03:15:04,525] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('andi','0:4')
+[2017-11-21 03:15:04,526] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  slice('andi','0:4') , result:  OK
+[2017-11-21 03:15:04,528] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  slice('andi','0:4')  result:  OK
+[2017-11-21 03:15:04,530] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  slice('andi','0:4')  to Replica:  1
+[2017-11-21 03:15:04,530] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  slice('andi','0:4')  Result:  OK
+[2017-11-21 03:15:04,530] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  put('andi','mandi sandi')  to Replica:  1
+[2017-11-21 03:15:04,531] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]>> req_operation:  get('andi')  : config:  2
+[2017-11-21 03:15:04,535] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  slice('andi','0:4')  to Replica:  2
+[2017-11-21 03:15:04,535] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Sending Check Point Shuttle: to Replica:  1
+[2017-11-21 03:15:04,535] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  slice('andi','0:4')  to Replica:  0
+[2017-11-21 03:15:04,543] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< req_operation:  get('andi')  Client:  0
+[2017-11-21 03:15:04,544] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: Slot:  5  : Operation:  get('andi')
+[2017-11-21 03:15:04,546] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('andi')
+[2017-11-21 03:15:04,546] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: Received check point shuttle:  3
+[2017-11-21 03:15:04,546] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :] Perform:  get('andi') , result:  mand
+[2017-11-21 03:15:04,548] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]>> Shuttle:  get('andi')  to Replica:  1
+[2017-11-21 03:15:04,549] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: Check point shuttle verified
+[2017-11-21 03:15:04,551] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  slice('andi','0:4')  to Replica:  1
+[2017-11-21 03:15:04,551] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Check Point Shuttle: to Replica:  2
+[2017-11-21 03:15:04,553] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 ]: Received check point shuttle:  3
+[2017-11-21 03:15:04,554] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< forward_shuttle :  5 , len :  5
+[2017-11-21 03:15:04,554] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Shuttle:  get('andi')  from Replica:  0
+[2017-11-21 03:15:04,555] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 ]: Check point shuttle verified
+[2017-11-21 03:15:04,556] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('andi')
+[2017-11-21 03:15:04,556] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :] Perform:  get('andi') , result:  mand
+[2017-11-21 03:15:04,557] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Shuttle:  get('andi')  to Replica:  2
+[2017-11-21 03:15:04,559] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 ]: Removing entries from history upto : 3  : history length:  4
+[2017-11-21 03:15:04,559] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Completed Check Point Shuttle: to Replica:  1
+[2017-11-21 03:15:04,561] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< forward_shuttle :  5 , len :  5
+[2017-11-21 03:15:04,561] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]<< Shuttle:  get('andi')  from Replica:  1
+[2017-11-21 03:15:04,561] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: Received completed check point shuttle
+[2017-11-21 03:15:04,562] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('andi')
+[2017-11-21 03:15:04,563] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :] Perform:  get('andi') , result:  mand
+[2017-11-21 03:15:04,564] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> res_operation:  get('andi')  result:  mand
+[2017-11-21 03:15:04,565] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: Completed Check point shuttle verified
+[2017-11-21 03:15:04,565] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: Removing entries from history upto : 3  : history length:  4
+[2017-11-21 03:15:04,565] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 ]: New History : 1
+[2017-11-21 03:15:04,565] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Completed Check Point Shuttle: to Replica:  0
+[2017-11-21 03:15:04,566] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :]<< res_operation:  get('andi')  Result:  mand
+[2017-11-21 03:15:04,567] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Test case completed! Validating Result
+[2017-11-21 03:15:04,567] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 ]: Received completed check point shuttle
+[2017-11-21 03:15:04,569] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 ]: Completed Check point shuttle verified
+[2017-11-21 03:15:04,570] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 ]: Removing entries from history upto : 3  : history length:  4
+[2017-11-21 03:15:04,570] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 ]: New History : 1
+[2017-11-21 03:15:04,572] Client.Client<Client:da402#ClientNode>:OUTPUT: [Client 0 :] Valid Final Result! Client:  ['OK', 'OK', 'luke', 'OK', 'OK', 'mata', 'OK', 'OK', 'mand'] , Replica:  ['OK', 'OK', 'luke', 'OK', 'OK', 'mata', 'OK', 'OK', 'mand']
+[2017-11-21 03:15:04,578] Main.Replica<Replica:c040b#OlympusNode>:OUTPUT: [Replica 2 :]>> Result Shuttle:  get('andi')  to Replica:  1
+[2017-11-21 03:15:04,581] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]<< Result Shuttle:  get('andi')  to Replica:  2
+[2017-11-21 03:15:04,581] Main.Replica<Replica:c040a#OlympusNode>:OUTPUT: [Replica 1 :]>> Result Shuttle:  get('andi')  to Replica:  0
+[2017-11-21 03:15:04,584] Main.Replica<Replica:c0409#OlympusNode>:OUTPUT: [Replica 0 :]<< Result Shuttle:  get('andi')  to Replica:  1
+[2017-11-21 03:15:07,679] da.api<MainProcess>:WARNING: Received keyboard interrupt. 
