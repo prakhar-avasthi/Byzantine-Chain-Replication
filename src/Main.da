@@ -3,7 +3,7 @@ import nacl
 import sys
 
 class Olympus(process):
-    def setup(num_replica, head_timeout, nonhead_timeout, failure_list):
+    def setup(num_replica, head_timeout, nonhead_timeout, checkpoint_interval, failure_list):
         output("[Olympus:] Setup")
         class_config = import_da('Configuration')
         self.config = class_config.Configuration()
@@ -109,7 +109,6 @@ class Olympus(process):
                 catch_up_history = calculateCatchUpHistory(i, self.longest_history, hist)
                 send(('catch-up', catch_up_history), to = self.config.list_replica[i])
 
-
     def receive(msg = ('caught-up', database, replica_id)):
         output("[Olympus:]<< caught-up from Replica: ", replica_id, " : database: ", database)
         self.num_caughtup_message += 1
@@ -154,7 +153,6 @@ class Olympus(process):
             makeNewConfiguration(database, [])
         else:
             self.valid_running_state_message = 2
-
 
     def compareDatabase(replica_database, longest_database):
         if replica_database is None:
@@ -220,13 +218,13 @@ class Olympus(process):
             output("failure map is :", failure_map)
             if i is 0:
                 setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'head', dict(database), list(history)\
-                    , public_keys, private_keys[i], head_timeout, 'PENDING', failure_map))
+                    , public_keys, private_keys[i], head_timeout, 'PENDING', checkpoint_interval, failure_map))
             elif i is num_replica-1:
                 setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'tail', dict(database)\
-                        , list(history), public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                        , list(history), public_keys, private_keys[i], nonhead_timeout, 'PENDING', checkpoint_interval, failure_map))
             else:
                 setup(replica, args=(self, self.config.config_id, list(replicaList), i, 'normal_replica'\
-                        , dict(database), list(history),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', failure_map))
+                        , dict(database), list(history),  public_keys, private_keys[i], nonhead_timeout, 'PENDING', checkpoint_interval, failure_map))
             i += 1
 
         self.config.list_replica = list(replicaList)
@@ -272,7 +270,7 @@ class Olympus(process):
                                         = {str(failure_type).strip(): (source.strip(),(client_id, message_number))}
 
 class Replica(process):
-    def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, fault_map):
+    def setup(olympus, config_id, replicaList, index, type, database, history, public_keys, private_key, timeout, state, checkpoint_interval, fault_map):
         self.forwarded_request = {}
         self.shuttle_request = {}
         self.direct_client_request = {}
@@ -285,7 +283,7 @@ class Replica(process):
         self.current_slot_id = {}
         self.running_state_log = []
         self.running_state_log.append((0, dict()))
-        self.check_point_threshold = 10
+        self.check_point_threshold = checkpoint_interval
 
         ## Flags for fault injections ##
         self.is_invalid_order_sig = False
