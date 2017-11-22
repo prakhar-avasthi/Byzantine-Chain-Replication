@@ -185,7 +185,7 @@
 	Validation: Node went immutable after validating the result proof in result shuttle
 	Outcome: Node went immutable as expected
 
-7)  Stress test case: Very high number of requests from one Client
+6.d)  Stress test case: Very high number of requests from one Client
 	Replicas: 5
 	Clients: 10 (all pseudorandom clients with sane seed and 100 requests)
 	Config file: 7_stress_test.txt
@@ -195,4 +195,274 @@
 	Log file: 7_stress_test.log
 	Validation: InValid, as clients have conflicting keys and values
 	Outcome: Pass, as clients have conflicting keys and values
+
+
+python -m da -F info -f -n ClientNode --cookie COOKIE --hostname 192.168.43.136 --message-buffer-size 30000 --master src/Main.da config/2_stress_test.txt 192.168.43.66
+
+7.a) wedge_request Fault test case: Fault Trigger: wedge_request on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 7_a_wedge_request_crash.txt
+	fault : crash()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation(); wedge_request(1), crash()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                7_a_wedge_request_crash.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                7_a_wedge_request_crash.txt
+	Log file: 7_a_shuttle_change_operation_wedge_request_crash.txt.log
+	Validation: Tail node became immutable and on first wedge request, replica 1 crashed.
+	Outcome: Replica crashed on wedge request as expected.
+
+7.b) wedge_request Fault test case: Fault Trigger: wedge_request on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 7_b_wedge_request_truncate_history.txt
+	fault : truncate_history(2)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation(); wedge_request(1), truncate_history(2)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                7_b_wedge_request_truncate_history.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                7_b_wedge_request_truncate_history.txt
+	Log file: 7_b_shuttle_change_operation_wedge_request_truncate_history.log
+	Validation: Tail node became immutable and on first wedge request, replica 1 truncated last 2 entries of its history before sending to 		olympus.
+	Outcome: Replica truncated 2 entries from history on wedge request as expected.
+
+7.c) wedge_request Fault test case: Fault Trigger: wedge_request on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 7_c_wedge_request_sleep.txt
+	fault : sleep(10)
+	Fault Scenario : failures[0,1] = shuttle(0,2), change_operation(); wedge_request(1), sleep(10)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                7_c_wedge_request_sleep.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                7_c_wedge_request_sleep.txt
+	Log file: 7_c_shuttle_change_operation_wedge_request_sleep.log
+	Validation: Tail node became immutable and on first wedge request, replica 1 went to sleep mode for 10 seconds.
+	Outcome: Replica went to sleep mode on wedge request as expected.
+
+8.a) new_configuration Fault test case: Fault Trigger: new_configuration on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 8_a_new_config_crash.txt
+	fault : crash()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			 failures[1,1] = new_configuration(0), crash()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                8_a_new_config_crash.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                8_a_new_config_crash.txt
+	Log file: 8_a_shuttle_change_operation_new_config_crash.log
+	Validation: Tail node became immutable and when olympus node made new configuration, replica 1 crashed.
+	Outcome: Replica crashed on new configuration request and olympus selected differente quoram as expected.
+
+8.b) new_configuration Fault test case: Fault Trigger: new_configuration on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 8_b_new_config_truncate_history.txt
+	fault : truncate_history(2)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			 failures[1,1] = shuttle(0,2), change_operation();new_configuration(0), truncate_history(2)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                8_b_new_config_truncate_history.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                8_b_new_config_truncate_history.txt
+	Log file: 8_b_shuttle_change_operation_new_config_truncate_history.log
+	Validation: Tail node became immutable and when olympus node made new configuration, replica 1 changed the operation and on wedge 			request after new configuration, replica truncated the last 2 entries in history.
+	Outcome: Replica truncated history on wedge request after new configuration request and olympus selected different quoram as expected.
+
+8.c) new_configuration Fault test case: Fault Trigger: new_configuration on 1st message on replica 1
+	Replicas: 3
+	Clients: 1
+	Config file: 8_c_new_config_sleep.txt
+	fault : sleep(20)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			 failures[1,1] = new_configuration(0), sleep(20)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                8_c_new_config_sleep.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                8_c_new_config_sleep.txt
+	Log file: 8_c_shuttle_change_operation_new_config_sleep.log
+	Validation: Tail node became immutable and when olympus node made new configuration, replica 1 went to a sleep mode.
+	Outcome: Replica went to a sleep mode for 20 seconds on new configuration request as expected.
+
+9.a) client_request Fault test case: Fault Trigger: client_request on 1st request from client on head node
+	Replicas: 3
+	Clients: 1
+	Config file: 9_a_client_request_invalid_order_sign_new_config_truncate_history.txt
+	fault : truncate_history(1)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			 failures[1,0] = client_request(0,2), invalid_order_sig()
+			 failures[1,1] = new_configuration(0), truncate_history(1)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                9_a_client_request_invalid_order_sign_new_config_truncate_history.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                9_a_client_request_invalid_order_sign_new_config_truncate_history.txt
+	Log file: 9_a_shuttle_change_operation_client_reqiest_invalid_order_sign_new_config_truncate_history.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on first request from client, head node changed 			    the order signature of the order proof and then on new configuration, replica 1 truncated last entry from its history.
+	Outcome: Replica truncated history on new configuration request as expected.
+
+9.b) client_request Fault test case: Fault Trigger: new_configuration on 1st request from client on head node
+	Replicas: 3
+	Clients: 1
+	Config file: 9_b_new_config_drop.txt
+	fault : drop()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			 failures[1,1] = new_configuration(0), drop()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                9_b_new_config_drop.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                9_b_new_config_drop.txt
+	Log file: 9_b_shuttle_change_operation_client_request_new_config_drop.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on first request from client replica 1 ignored the 		    message from the client which created holes in the history and replica 2 asked for a new configuration.
+	Outcome: Holes created and replica 2 asked for a new configuration as expected.
+
+9.c) new_configuration Fault test case: Fault Trigger: new_configuration
+	Replicas: 3
+	Clients: 1
+	Config file: 9_c_new_config_extra_op.txt
+	fault : extra_op()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			failures[1,1] = new_configuration(0), extra_op()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                9_c_new_config_extra_op.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                9_c_new_config_extra_op.txt
+	Log file: 9_c_shuttle_change_operation_client_request_new_config_extra_op.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on first request from client replica 1 put an 		extra operation in its running state which created holes in the running state and replica 2 asked for a new configuration.
+	Outcome: Holes created and replica 2 asked for a new configuration as expected.
+
+9.d) new_configuration Fault test case: Fault Trigger: new_configuration
+	Replicas: 3
+	Clients: 1
+	Config file: 9_d_new_config_invalid_result_sig.txt
+	fault : invalid_result_sig()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			failures[1,1] = new_configuration(0), invalid_result_sig()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                9_d_new_config_invalid_result_sig.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                9_d_new_config_invalid_result_sig.txt
+	Log file: 9_d_shuttle_change_operation_client_request_new_config_invalid_result_sig.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on first request from client replica 1 on first 			cleint request, put a invalid result signature which made replica immutable
+	Outcome: Tail node went into immutable mode because it was not able to validate the result signature while sending result shuttle back 			in the chain as expected.
+
+10.a) checkpoint Fault test case: Fault Trigger: checkpoint
+	Replicas: 3
+	Clients: 1
+	Config file: 10_a_checkpoint_crash.txt
+	fault : crash()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			failures[1,1] = checkpoint(1), crash()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                10_a_checkpoint_crash.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                10_a_checkpoint_crash.txt
+	Log file: 10_a_checkpoint_crash.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on receiving checkpoing shuttle, replica 1 crashed.
+	Outcome: Replica 1 crashed as expected on receiving checkpoint shuttle
+
+10.b) checkpoint Fault test case: Fault Trigger: checkpoint
+	Replicas: 3
+	Clients: 1
+	Config file: 10_b_checkpoint_sleep.txt
+	fault : sleep(5)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			failures[1,1] = checkpoint(1), sleep(5)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                10_b_checkpoint_sleep.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                10_b_checkpoint_sleep.txt
+	Log file: 10_b_checkpoint_sleep.log
+	Validation: Tail node became immutable and when olympus node made new configuration, on receiving checkpoing shuttle, replica 1 went to 	sleep mode for 5 seconds.
+	Outcome: Replica 1 slept for 5 second as expected on receiving checkpoint shuttle
+
+11.a) completed_checkpoint Fault test case: Fault Trigger: completed_checkpoint 
+	Replicas: 3
+	Clients: 1
+	Config file: 11_a_completed_checkpoint_drop_check_point_stmt.txt
+	fault : drop_checkpt_stmts()
+	Fault Scenario : failures[0,1] = completed_checkpoint(1), drop_checkpt_stmts()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                11_a_completed_checkpoint_drop_check_point_stmt.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                11_a_completed_checkpoint_drop_check_point_stmt.txt
+	Log file: 11_a_completed_checkpoint_drop_check_point_stmt.log
+	Validation: On receiving completed check point shuttle, replca 1 removed first t + 1 entries from checkpoint shuttle and when replica 0 		will receive it, it wont be able to validate checkpoint shuttle and goes into the immutable state
+	Outcome: Replica 0 went to immutable state.
+
+11.b) completed_checkpoint Fault test case: Fault Trigger: completed_checkpoint 
+	Replicas: 3
+	Clients: 1
+	Config file: 11_b_completed_checkpoint_invalid_order_sig.txt
+	fault : invalid_order_sig()
+	Fault Scenario : failures[0,0] = completed_checkpoint(1), invalid_order_sig()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                11_b_completed_checkpoint_invalid_order_sig.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                11_b_completed_checkpoint_invalid_order_sig.txt
+	Log file: 11_b_completed_checkpoint_invalid_order_sig.log
+	Validation: On receiving completed check point shuttle, replca 0 will put an invalid order signature as a result of which replica 1 	 		    wont be able to validate order proof and goes into immutable state and ask reconfiguration.
+	Outcome: Replica 1 went to immutable state and asked for reconfiguration.
+
+11.c) completed_checkpoint Fault test case: Fault Trigger: completed_checkpoint 
+	Replicas: 3
+	Clients: 1
+	Config file: 11_c_completed_checkpoint_extra_op.txt
+	fault : extra_op()
+	Fault Scenario : failures[0,0] = completed_checkpoint(1), extra_op()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                11_c_completed_checkpoint_extra_op.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                11_c_completed_checkpoint_extra_op.txt
+	Log file: 11_c_completed_checkpoint_extra_op.log
+	Validation: On receiving completed checkpoint shuttle, replica 0 put an extra operation in its running state which created holes in the 		    running statet and replica 1 asked for a new configuration.
+	Outcome: Holes created and replica 1 asked for a new configuration as expected.
+
+12.a) catch_up Fault test case: Fault Trigger: catch_up 
+	Replicas: 3
+	Clients: 1
+	Config file: 12_a_catch_up_crash.txt
+	fault : crash()
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+	failures[1,1] = new_configuration(0), invalid_order_sig(); catch_up(1), crash()
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                12_a_catch_up_crash.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                12_a_catch_up_crash.txt
+	Log file: 12_a_catch_up_crash.log
+	Validation: Replica 1 crashed on getting catch_up message from olympus and dint send its history.
+	Outcome: Replica 1 crashed on getting catch_up message as expected
+
+12.b) catch_up Fault test case: Fault Trigger: catch_up 
+	Replicas: 3
+	Clients: 1
+	Config file: 12_b_catch_up_sleep.txt
+	fault : sleep(9)
+	Fault Scenario : failures[0,1] = shuttle(0,1), change_operation()
+			failures[1,1] = new_configuration(0), invalid_order_sig(); catch_up(1), sleep(9)
+	Command:
+		ClientNode: python3 -m da -F info -f --message-buffer-size 20000 -n ClientNode Main.da 
+                12_b_catch_up_sleep.txt
+		OlympusNode: python3 -m da -F info -f --message-buffer-size 20000 -n OlympusNode -D Main.da  
+                12_b_catch_up_sleep.txt
+	Log file: 12_b_catch_up_sleep.log
+	Validation: Replica 1 slept for 9 seconds on getting catch_up message from olympus and dint send its history.
+	Outcome: Replica 1 slept on getting catch_up message as expected
 

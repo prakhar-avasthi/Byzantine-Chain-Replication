@@ -480,6 +480,7 @@ class Replica(process):
             order_statement.action = action
 
             ##### Sign order statement, add to Order proof #######
+            output("[Replica",self.index, " Signing order statement")
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             if self.is_invalid_order_sig:
                 signed_order_statement = invalid_sign(signed_order_statement)
@@ -494,9 +495,11 @@ class Replica(process):
             result_statement.action = action
 
             ######## Crypto hash of result #########
+            output("[Replica",self.index, " Crypto hashing result")
             result_statement.result = calculate_result_digest(result)
 
             ##### sign result statement, add to result proof #######
+            output("[Replica",self.index, " Signing result statement")
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             if self.is_invalid_result_sig :
                 signed_result_statement = invalid_sign(signed_result_statement)
@@ -558,6 +561,7 @@ class Replica(process):
         result_proof = forward_shuttle.result_proof
 
         ##### validate orderproof #######
+        output("[Replica",self.index, " Validating order proof")
         is_valid = validate_order_proof(action,order_proof)
 
         if not is_valid:
@@ -636,6 +640,7 @@ class Replica(process):
                     result = performOperation(action)
 
             ########### Sign order statement, Add to order proof ###########
+            output("[Replica",self.index, " Signing order proof")
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             if self.is_invalid_order_sig :
                 signed_order_statement = invalid_sign(signed_order_statement)
@@ -649,9 +654,11 @@ class Replica(process):
             result_statement.action = action
 
             ###### Crypto hash of result #######
+            output("[Replica",self.index, " Crypto hashing result")
             result_statement.result= calculate_result_digest(result)
 
             ####### Sign Result Statement, Add to result_proof ###############
+            output("[Replica",self.index, " Signing result statement")
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             if self.is_invalid_result_sig :
                 signed_result_statement = invalid_sign(signed_result_statement)
@@ -698,6 +705,7 @@ class Replica(process):
                     result = performOperation(action)
 
             ##### Sign Order statement, Add to order proof
+            output("[Replica",self.index, " Signing order statement")
             signed_order_statement = self.private_key.sign(pickle.dumps(order_statement))
             if self.is_invalid_order_sig :
                 signed_order_statement = invalid_sign(signed_order_statement)
@@ -711,10 +719,12 @@ class Replica(process):
             result_statement.action = action
 
             ##### Crypto hash of result ######
+            output("[Replica",self.index, "Crypto hashing result")
             result_digest = calculate_result_digest(result)
             result_statement.result = result_digest
 
             ##### Sign Result statement, Add to Result proof
+            output("[Replica",self.index, " Signing result statement")
             signed_result_statement = self.private_key.sign(pickle.dumps(result_statement))
             if self.is_invalid_result_sig :
                 signed_result_statement = invalid_sign(signed_result_statement)
@@ -770,11 +780,13 @@ class Replica(process):
 
         ##### if result proof is valid, add in history ######
         if is_valid  and state == 'ACTIVE':
+
             ## fault injection case
             try:
                 self.result_shuttle_request[client_index] += 1
             except KeyError:
                 self.result_shuttle_request[client_index] = 1
+
             ################################ Failure Injections for phase 3 #######################################
             if client_index in self.result_shuttle_request :
                 if self.is_failure_invalid_result_sig("result_shuttle", str(client_index), str(self.result_shuttle_request[client_index])):
@@ -860,12 +872,15 @@ class Replica(process):
                     try:
                         check_point_statement.running_state = insert_entries(self.index)
                     except TypeError:
-                        output("333333333333333 HERE")
+                        output("Type error occured while inserting entries")
+
                     ##### Crypto hash of check point running state ######
+                    output("[Replica",self.index, " Crypto hashing checkpoint running state")
                     running_state_digest = calculate_running_state_digest(check_point_statement.running_state)
                     check_point_statement.running_state = running_state_digest
 
                     #### Sign Check Point Statement and add to checkpoint proof ####
+                    output("[Replica",self.index, " Signing check point statement")
                     signed_check_point_statement = self.private_key.sign(pickle.dumps(check_point_statement))
                     check_point_proof = []
                     check_point_proof.append(signed_check_point_statement)
