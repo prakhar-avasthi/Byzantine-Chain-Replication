@@ -71,6 +71,14 @@
      - Implemented shuttle propagation and validation at Replica.
      - Implemented Checking of signatures and hashes of Result proof in Client and Replica.
      - Implemented Fault injection triggers and failures.
+     - Implemented detect provable misbehavior and send reconfiguration request
+     - Implemented initiating checkpoint shuttle periodically by head.
+     - Implemented handling of checkpoint shuttl: validate completed checkpoint proof.
+     - Implemented deleting history on receiving completed checkpoint shuttle.
+     - Implemented history validation on the olympus node.
+     - Implemented all the fault triggers.
+     - Implemented all the fault injections corresponding to every fault trigger and handle all the faults.
+     - Wrote testing.txt with expected behaviors corresponding to possible scenarios.
 
 
 ## MAIN FILES.
